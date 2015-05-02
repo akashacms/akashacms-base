@@ -647,6 +647,8 @@ module.exports.mahabhuta = [
             	}, function(err, html) {
             		if (err) next(err);
             		else {
+            		    // Ensure the footnote tags are replaced 
+            		    // so we only get here the first time through
             			$(footnote).replaceWith(html);
             			
             			akasha.partial("ak_footnote.html.ejs", {
@@ -660,6 +662,13 @@ module.exports.mahabhuta = [
             				if (err2) next(err2);
             				else {
             					if ($('div#footnote-area').length <= 0) {
+            					    // Insert placeholder for the footnotes.
+            					    //
+            					    // At the time we get here there will be
+            					    // multiple root elements in the HTML.
+            					    // With Cheerio 0.19 the :root selector found
+            					    // each of those root elements.
+            					    // We want to put this code AFTER the LAST one.
             						$(":root").last().after("<div id='footnote-area'><strong>Footnotes</strong><br></div>");
             					}
             					$('div#footnote-area').append(html2);
@@ -669,7 +678,6 @@ module.exports.mahabhuta = [
             			
             		}
             	});
-            	// next(new Error("footnote not yet implemented"));
             },
             function(err) {
 				if (err) {
