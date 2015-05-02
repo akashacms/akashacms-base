@@ -90,7 +90,7 @@ var fixHeaderMeta = function(metadata) {
 		data.metadate = data.rendered_date;
 	}
 	return data;
-}
+};
 
 var akDoHeaderMeta = function(metadata, done) {
 	akasha.partial("ak_headermeta.html.ejs", fixHeaderMeta(metadata), done);
@@ -118,7 +118,7 @@ module.exports.mahabhuta = [
 				}, function(err, rendered) {
 					if (err) { logger.error(err); next(err); }
 					else { logger.trace('ak-title replace'); $(titleTag).replaceWith(rendered); next(); }
-				})
+				});
             },
             function(err) {
             	if (err) {
@@ -660,7 +660,7 @@ module.exports.mahabhuta = [
             				if (err2) next(err2);
             				else {
             					if ($('div#footnote-area').length <= 0) {
-            						$(":root").append("<div id='footnote-area'><strong>Footnotes</strong><br></div>");
+            						$(":root").last().after("<div id='footnote-area'><strong>Footnotes</strong><br></div>");
             					}
             					$('div#footnote-area').append(html2);
             					next();
@@ -681,10 +681,13 @@ module.exports.mahabhuta = [
 		
 		function($, metadata, dirty, done) {
         	logger.trace('a modifications');
+        	
+        	
             var links = [];
             $('html body a').each(function(i, elem) { links.push(elem); });
             async.eachSeries(links,
             function(link, next) {
+                setImmediate(function() {
             	var href   = $(link).attr('href');
             	/*var text   = $(link).text();
             	var rel    = $(link).attr('rel');
@@ -761,6 +764,7 @@ module.exports.mahabhuta = [
             			next();
 					}
 				} else next();
+                });
             },
             function(err) {
 				if (err) done(err);
