@@ -754,7 +754,7 @@ module.exports.mahabhuta = [
 							href = path.join(docdir, href);
 							// util.log('***** FIXED href '+ hreforig +' to '+ href);
 						}
-            			var docEntry = akasha.findDocumentForUrlpath(config, href);
+            			var docEntry = akasha.findDocumentForUrlpath(href);
             			if (docEntry) {
             				// Automatically add a title= attribute
             				if (!$(link).attr('title') && docEntry.frontmatter.yaml.title) {
