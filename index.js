@@ -186,21 +186,21 @@ module.exports.mahabhuta = [
             $('ak-stylesheets').each(function(i, elem) { elements.push(elem); });
             async.eachSeries(elements,
             function(element, next) {
-				if (typeof config.headerScripts !== "undefined") {
-					akasha.partial("ak_stylesheets.html.ejs", {
-						headerScripts: config.headerScripts 
-					}, function(err, style) {
-						if (err) { logger.error(err); next(err); }
-						else {
-							$(element).replaceWith(style);
-							next();
-						}
-					});
-				}
-				else {
-					$(element).remove();
-					next();
-				}
+                var scripts;
+			    if (typeof metadata.headerStylesheetsAdd !== "undefined") {
+			        scripts = config.headerScripts.stylesheets.concat(metadata.headerStylesheetsAdd);
+			    } else {
+			        scripts = config.headerScripts.stylesheets;
+			    }
+				akasha.partial("ak_stylesheets.html.ejs", {
+					stylesheets: scripts
+				}, function(err, style) {
+					if (err) { logger.error(err); next(err); }
+					else {
+						$(element).replaceWith(style);
+						next();
+					}
+				});
             }, 
             function(err) {
 				if (err) {
@@ -246,22 +246,20 @@ module.exports.mahabhuta = [
             $('ak-headerJavaScript').each(function(i, elem) { elements.push(elem); });
             async.eachSeries(elements,
             function(element, next) {
-            
-				if (typeof config.headerScripts !== "undefined" && typeof config.headerScripts.javaScriptTop !== "undefined") {
-				    akasha.partial("ak_javaScript.html.ejs", 
-							{ javaScripts: config.headerScripts.javaScriptTop },
-							function(err, html) {
-								if (err) next(err);
-								else {
-									$(element).replaceWith(html);
-									next();
-								}
-							});
-				}
-				else {
-					$(element).remove();
-            		next();
-				}
+                var scripts;
+			    if (typeof metadata.headerJavaScriptAddTop !== "undefined") {
+			        scripts = config.headerScripts.javaScriptTop.concat(metadata.headerJavaScriptAddTop);
+			    } else {
+			        scripts = config.headerScripts.javaScriptTop;
+			    }
+			    akasha.partial("ak_javaScript.html.ejs", { javaScripts: scripts },
+						function(err, html) {
+							if (err) next(err);
+							else {
+								$(element).replaceWith(html);
+								next();
+							}
+						});
             }, 
             function(err) {
 				if (err) {
@@ -277,21 +275,20 @@ module.exports.mahabhuta = [
             $('ak-footerJavaScript').each(function(i, elem) { elements.push(elem); });
             async.eachSeries(elements,
             function(element, next) {
-			
-				if (typeof config.headerScripts !== "undefined" && typeof config.headerScripts.javaScriptBottom !== "undefined")
-				    akasha.partial("ak_javaScript.html.ejs", 
-							{ javaScripts: config.headerScripts.javaScriptBottom },
-							function(err, html) {
-								if (err) next(err);
-								else {
-									$(element).replaceWith(html);
-									next();
-								}
-							});
-				else {
-					$(element).remove();
-            		next();
-				}
+                var scripts;
+			    if (typeof metadata.headerJavaScriptAddBottom !== "undefined") {
+			        scripts = config.headerScripts.javaScriptBottom.concat(metadata.headerJavaScriptAddBottom);
+			    } else {
+			        scripts = config.headerScripts.javaScriptBottom;
+			    }
+			    akasha.partial("ak_javaScript.html.ejs", { javaScripts: scripts },
+						function(err, html) {
+							if (err) next(err);
+							else {
+								$(element).replaceWith(html);
+								next();
+							}
+						});
             }, 
             function(err) {
 				if (err) {
