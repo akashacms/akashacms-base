@@ -47,10 +47,6 @@ module.exports.config = function(_akasha, _config) {
 	return module.exports;
 };
 
-module.exports.helloWorld = function() {
-   return "Hello, World!";
-};
-
 var fixHeaderMeta = function(metadata) {
 	var data = {};
 	for (var prop in metadata) {
