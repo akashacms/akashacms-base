@@ -1,7 +1,7 @@
 /**
  *
  * Copyright 2014-2015 David Herron
- * 
+ *
  * This file is part of AkashaCMS (http://akashacms.com/).
  *
  *  Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,7 +29,7 @@ var logger;
 module.exports.config = function(_akasha, _config) {
 	akasha = _akasha;
 	config = _config;
-	logger = akasha.getLogger("builtin");
+	logger = akasha.getLogger("base");
 	
 	if (!config.builtin) config.builtin = {};
 	if (!config.builtin.suppress) config.builtin.suppress = {};
@@ -44,10 +44,6 @@ module.exports.config = function(_akasha, _config) {
 		config.root_assets.push(path.join(__dirname, 'assets'));
 	}
     
-    if (config.headerScripts) {
-        config.headerScripts.javaScriptBottom.push({ href: "/js/akbase.js" });
-	}
-	
 	return module.exports;
 };
 
@@ -168,7 +164,7 @@ module.exports.mahabhuta = [
 					});
 				}
 				else {
-					$(element).remove(); 
+					$(element).remove();
 					next();
 				}
             },
@@ -188,7 +184,7 @@ module.exports.mahabhuta = [
             function(element, next) {
             
 				if (typeof config.google.siteVerification !== "undefined") {
-				    akasha.partial("ak_siteverification.html.ejs", 
+				    akasha.partial("ak_siteverification.html.ejs",
 							{ googleSiteVerification: config.google.siteVerification },
 							function(err, html) {
 								if (err) next(err);
@@ -201,7 +197,7 @@ module.exports.mahabhuta = [
 					$(element).remove();
             		next();
 				}
-            }, 
+            },
             function(err) {
 				if (err) {
 					logger.error('ak-siteverification Errored with '+ util.inspect(err));
@@ -233,7 +229,7 @@ module.exports.mahabhuta = [
 					$(element).remove();
             		next();
 				}
-            }, 
+            },
             function(err) {
 				if (err) {
 					logger.error('ak-google-analytics Errored with '+ util.inspect(err));
@@ -257,7 +253,7 @@ module.exports.mahabhuta = [
 								next();
 						}
 				});
-            }, 
+            },
             function(err) {
 				if (err) {
 					logger.error('ak-sitemapxml Errored with '+ util.inspect(err));
@@ -286,7 +282,7 @@ module.exports.mahabhuta = [
 					if (err) done(err);
 					else done();
 				});
-			} else done();               
+			} else done();
         },
 		
 		function($, metadata, dirty, done) {
@@ -301,12 +297,12 @@ module.exports.mahabhuta = [
 							publicationDate: metadata.publicationDate
 						},
 						function(err, html) {
-							if (err) { logger.error(err); next(err); } 
+							if (err) { logger.error(err); next(err); }
 							else { $(element).replaceWith(html); next(); }
 						});
 				} else next();
 			}, function(err) {
-				if (err) { logger.error(err); done(err); } 
+				if (err) { logger.error(err); done(err); }
 				else { logger.trace('END publication-date'); done(); }
 			});
         },
@@ -338,7 +334,7 @@ module.exports.mahabhuta = [
 									authorship: author.authorship
 								},
 								function(err, html) {
-									if (err) { logger.error(err); next(err); } 
+									if (err) { logger.error(err); next(err); }
 									else { $(element).replaceWith(html); next(); }
 								});
 						} else {
@@ -346,7 +342,7 @@ module.exports.mahabhuta = [
 							next();
 						}
 					}, function(err) {
-						if (err) { logger.error(err); done(err); } 
+						if (err) { logger.error(err); done(err); }
 						else { logger.trace('END author-link'); done(); }
 					});
 				} else done();
@@ -396,7 +392,7 @@ module.exports.mahabhuta = [
 						else next();
 					});
 			}, function(err) {
-				if (err) { logger.error(err); done(err); } 
+				if (err) { logger.error(err); done(err); }
 				else { logger.trace('END open-graph-promote-images'); done(); }
 			});
         },
@@ -437,70 +433,11 @@ module.exports.mahabhuta = [
 						else { $('head').append(txt); next(); }
 					});
 				}, function(err) {
-					if (err) { logger.error(err); done(err); } 
+					if (err) { logger.error(err); done(err); }
 					else { logger.trace('END img.metaog-promote'); done(); }
 				});
 			} else done();
         },
-		
-		function($, metadata, dirty, done) {
-        	logger.trace('footnote');
-        	// <footnote href="http:..." name="..." title="..." rel="nofollow">Description</footnote>
-        	var footnoteCount = 0;
-            var footnotes = [];
-            $('footnote').each(function(i, elem) { footnotes.push(elem); });
-            async.eachSeries(footnotes,
-            function(footnote, next) {
-            	var href = $(footnote).attr('href');
-            	var name = $(footnote).attr('name');
-            	var title = $(footnote).attr('title');
-            	var rel   = $(footnote).attr('rel');
-            	var text  = $(footnote).text();
-            	akasha.partial("ak_footnoteRef.html.ejs", {
-            		name: name
-            	}, function(err, html) {
-            		if (err) next(err);
-            		else {
-            		    // Ensure the footnote tags are replaced 
-            		    // so we only get here the first time through
-            			$(footnote).replaceWith(html);
-            			
-            			akasha.partial("ak_footnote.html.ejs", {
-            				count: ++footnoteCount,
-            				url: href,
-            				title: title,
-            				name: name,
-            				description: text,
-            				rel: rel
-            			}, function(err2, html2) {
-            				if (err2) next(err2);
-            				else {
-            					if ($('div#footnote-area').length <= 0) {
-            					    // Insert placeholder for the footnotes.
-            					    //
-            					    // At the time we get here there will be
-            					    // multiple root elements in the HTML.
-            					    // With Cheerio 0.19 the :root selector found
-            					    // each of those root elements.
-            					    // We want to put this code AFTER the LAST one.
-            						$(":root").last().after("<div id='footnote-area'><strong>Footnotes</strong><br></div>");
-            					}
-            					$('div#footnote-area').append(html2);
-            					next();
-            				}
-            			});
-            			
-            		}
-            	});
-            },
-            function(err) {
-				if (err) {
-					logger.trace('partial Errored with '+ util.inspect(err));
-					done(err);
-				} else done();
-        	});
-        },
-		
 		function($, metadata, dirty, done) {
         	logger.trace('a modifications');
         	
