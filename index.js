@@ -143,6 +143,35 @@ module.exports.mahabhuta = [
 				} else done();
             });
         },
+        
+		function($, metadata, dirty, done) {
+        	logger.trace('ak-header-linkreltags');
+            var elements = [];
+            $('ak-header-linkreltags').each(function(i, elem) { elements.push(elem); });
+            async.eachSeries(elements,
+            function(element, next) {
+                if (config.akBase && config.akBase.linkRelTags) {
+                    config.akBase.linkRelTags.forEach(function(lrtag) {
+					    akasha.partial("ak_linkreltag.html.ejs", {
+					        relationship: lrtag.relationship,
+					        url: lrtag.url
+					    }, function(err, rendered) {
+    						if (err) { logger.error(err); next(err); }
+    						else { $(element).replaceWith(rendered); next(); }
+    					});
+                    });
+                } else {
+					$(element).remove();
+					next();
+                }
+            },
+            function(err) {
+				if (err) {
+					logger.error('ak-header-linkreltags Errored with '+ util.inspect(err));
+					done(err);
+				} else done();
+            });
+        },
 		
 		function($, metadata, dirty, done) {
         	logger.trace('ak-header-canonical-url');
