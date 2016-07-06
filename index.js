@@ -33,7 +33,7 @@ module.exports = class BasePlugin extends akasha.Plugin {
 	constructor() {
 		super("akashacms-base");
 	}
-	
+
 	configure(config) {
         this._config = config;
 		config.addPartialsDir(path.join(__dirname, 'partials'));
@@ -120,7 +120,7 @@ module.exports.mahabhuta = [
             	} else done();
             });
         },
-		
+
 		function($, metadata, dirty, done) {
             var metas = [];
             $('ak-header-metatags').each((i, elem) => { metas.push(elem); });
@@ -145,7 +145,7 @@ module.exports.mahabhuta = [
 				} else done();
             });
         },
-        
+
 		function($, metadata, dirty, done) {
             var elements = [];
             $('ak-header-linkreltags').each((i, elem) => { elements.push(elem); });
@@ -178,7 +178,7 @@ module.exports.mahabhuta = [
 				} else done();
             });
         },
-		
+
 		function($, metadata, dirty, done) {
             var elements = [];
             $('ak-header-canonical-url').each((i, elem) => { elements.push(elem); });
@@ -209,7 +209,7 @@ module.exports.mahabhuta = [
 				} else done();
             });
         },
-		
+
 		function($, metadata, dirty, done) {
             var elements = [];
             $('ak-siteverification').each((i, elem) => { elements.push(elem); });
@@ -238,7 +238,7 @@ module.exports.mahabhuta = [
 				} else done();
             });
         },
-		
+
 		function($, metadata, dirty, done) {
             var elements = [];
             $('ak-google-analytics').each((i, elem) => { elements.push(elem); });
@@ -246,7 +246,7 @@ module.exports.mahabhuta = [
         	log('ak-google-analytics');
             async.eachSeries(elements,
             (element, next) => {
-				if (typeof config.google.analyticsAccount !== "undefined" && typeof config.google.analyticsDomain !== "undefined") {
+				if (typeof metadata.config.google !== "undefined" && typeof metadata.config.google.analyticsAccount !== "undefined" && typeof metadata.config.google.analyticsDomain !== "undefined") {
 				    akasha.partial(metadata.config, "ak_googleAnalytics.html.ejs", {
 						googleAnalyticsAccount: config.google.analyticsAccount,
 						googleAnalyticsDomain: config.google.analyticsDomain
@@ -269,7 +269,7 @@ module.exports.mahabhuta = [
 				} else done();
             });
         },
-		
+
 		function($, metadata, dirty, done) {
             var elements = [];
             $('ak-sitemapxml').each(function(i, elem) { elements.push(elem); });
@@ -291,7 +291,7 @@ module.exports.mahabhuta = [
 				} else done();
             });
         },
-		
+
 		function($, metadata, dirty, done) {
 			if ($('html head').get(0)) {
 				var rssheadermeta = [];
@@ -315,7 +315,7 @@ module.exports.mahabhuta = [
 				});
 			} else done();
         },
-		
+
 		function($, metadata, dirty, done) {
 			var elements = [];
 			$('publication-date').each(function(i, elem) { elements.push(elem); });
@@ -339,7 +339,7 @@ module.exports.mahabhuta = [
 				else { done(); }
 			});
         },
-		
+
 		function($, metadata, dirty, done) {
 			if (metadata.config.authorship) {
 				var auname;
@@ -383,7 +383,7 @@ module.exports.mahabhuta = [
 				} else done();
 			} else done();
         },
-        
+
         /**
          * These next two tags / functions are a two-step process for extracting image
          * references and listing them as meta og:image tags.
@@ -422,7 +422,7 @@ module.exports.mahabhuta = [
 						$(img).addClass('metaog-promote');
 					}
 					next2();
-					
+
 				}, function(err) {
 					if (err) next(err);
 					else next();
@@ -432,7 +432,7 @@ module.exports.mahabhuta = [
 				else { done(); }
 			});
         },
-        				
+
         /** Handle phase 2 of promoting image href's as og:image meta tags. */
         function($, metadata, dirty, done) {
 			if ($('html head').get(0)) {
@@ -478,7 +478,7 @@ module.exports.mahabhuta = [
 			} else done();
         },
 		function($, metadata, dirty, done) {
-        	
+
             var links = [];
             $('html body a').each((i, elem) => { links.push(elem); });
 			if (links.length <= 0) return done();
@@ -487,22 +487,22 @@ module.exports.mahabhuta = [
             (link, next) => {
                 setImmediate(function() {
             	var href   = $(link).attr('href');
-            	
+
             	// The potential exists to manipulate links to local documents
             	// Such as what's done with the linkto tag above.
             	// Such as checking for valid links
             	// Also need to consider links to //hostname/path/to/object
             	// Potential for complete link checking service right here
-            	
+
             	if (href && href !== '#') {
 					var uHref = url.parse(href, true, true);
-					
+
 					if (uHref.protocol || uHref.slashes) {
 						// It's a link to somewhere else
 						// look at domain in whitelist and blacklist
-					
+
 						var donofollow = false;
-					
+
 						if (metadata.config.nofollow && metadata.config.nofollow.blacklist) {
 							metadata.config.nofollow.blacklist.forEach(function(re) {
 								if (uHref.hostname.match(re)) {
@@ -517,17 +517,17 @@ module.exports.mahabhuta = [
 								}
 							});
 						}
-					
+
 						if (donofollow && !$(link).attr('rel')) {
 							$(link).attr('rel', 'nofollow');
 						}
-						
+
 						/* TODO
 						if (! metadata.config.builtin.suppress.extlink
 						 && $(link).find("img.ak-extlink-icon").length <= 0) {
 							$(link).append('<img class="ak-extlink-icon" src="/img/extlink.png"/>');
 						} */
-					
+
 						next();
 					} else {
 						// This is where we would handle local links
