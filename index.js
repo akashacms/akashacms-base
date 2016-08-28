@@ -55,7 +55,7 @@ module.exports = class BasePlugin extends akasha.Plugin {
 		return this._googleSiteVerification
 			? akasha.partialSync(this._config, "ak_siteverification.html.ejs",
 				{ googleSiteVerification: this._googleSiteVerification })
-			: "undefined";
+			: "";
 	}
 
 	googleAnalytics(analyticsAccount, analyticsDomain) {
@@ -246,6 +246,7 @@ module.exports.mahabhuta = [
             async.eachSeries(elements,
             (element, next) => {
 				let sv = metadata.config.plugin('akashacms-base').doGoogleSiteVerification();
+				// console.log(`Site Verification ${sv}`);
 				if (sv && sv !== "") {
 					$(element).replaceWith(sv);
 				} else {
