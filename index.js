@@ -42,6 +42,38 @@ module.exports = class BasePlugin extends akasha.Plugin {
 		config.addMahabhuta(module.exports.mahabhuta);
 	}
 
+	doHeaderMetaSync(metadata) {
+	    return akasha.partialSync(this._config, "ak_headermeta.html.ejs", fixHeaderMeta(metadata));
+	}
+
+	googleSiteVerification(code) {
+		this._googleSiteVerification = code;
+		return this;
+	}
+
+	doGoogleSiteVerification() {
+		return this._googleSiteVerification
+			? akasha.partialSync(this._config, "ak_siteverification.html.ejs",
+				{ googleSiteVerification: this._googleSiteVerification })
+			: "undefined";
+	}
+
+	googleAnalytics(analyticsAccount, analyticsDomain) {
+		this._googleAnalyticsAccount = analyticsAccount;
+		this._googleAnalyticsDomain = analyticsDomain;
+		return this;
+	}
+
+	doGoogleAnalyticsSync() {
+		if (this._googleAnalyticsAccount && this._googleAnalyticsAccount) {
+			return akasha.partialSync(this._config, "ak_googleAnalytics.html.ejs", {
+				googleAnalyticsAccount: this._googleAnalyticsAccount,
+				googleAnalyticsDomain: this._googleAnalyticsAccount
+			});
+		} else {
+			return "";
+		}
+	}
 }
 
 
@@ -84,10 +116,6 @@ var fixHeaderMeta = function(metadata) {
 
 var akDoHeaderMeta = function(metadata) {
 	return akasha.partial(metadata.config, "ak_headermeta.html.ejs", fixHeaderMeta(metadata));
-};
-
-module.exports.doHeaderMetaSync = function(metadata) {
-    return akasha.partialSync(metadata.config, "ak_headermeta.html.ejs", fixHeaderMeta(metadata));
 };
 
 module.exports.mahabhuta = [
@@ -217,19 +245,13 @@ module.exports.mahabhuta = [
         	log('ak-siteverification');
             async.eachSeries(elements,
             (element, next) => {
-				if (metadata.config.google && typeof metadata.config.google.siteVerification !== "undefined") {
-				    akasha.partial(metadata.config, "ak_siteverification.html.ejs",
-					{ googleSiteVerification: metadata.config.google.siteVerification })
-					.then(html => {
-						if (err) return next(err);
-						$(element).replaceWith(html);
-						next();
-					})
-					.catch(err => { next(err); });
+				let sv = metadata.config.plugin('akashacms-base').doGoogleSiteVerification();
+				if (sv && sv !== "") {
+					$(element).replaceWith(sv);
 				} else {
 					$(element).remove();
-            		next();
 				}
+				next();
             },
             (err) => {
 				if (err) {
@@ -246,21 +268,13 @@ module.exports.mahabhuta = [
         	log('ak-google-analytics');
             async.eachSeries(elements,
             (element, next) => {
-				if (typeof metadata.config.google !== "undefined" && typeof metadata.config.google.analyticsAccount !== "undefined" && typeof metadata.config.google.analyticsDomain !== "undefined") {
-				    akasha.partial(metadata.config, "ak_googleAnalytics.html.ejs", {
-						googleAnalyticsAccount: config.google.analyticsAccount,
-						googleAnalyticsDomain: config.google.analyticsDomain
-					})
-					.then(html => {
-						$(element).replaceWith(html);
-						next();
-					})
-					.catch(err => { next(err); });
-				}
-				else {
+				let ga = metadata.config.plugin('akashacms-base').doGoogleAnalyticsSync();
+				if (ga && ga !== "") {
+					$(element).replaceWith(ga);
+				} else {
 					$(element).remove();
-            		next();
 				}
+				next();
             },
             function(err) {
 				if (err) {
