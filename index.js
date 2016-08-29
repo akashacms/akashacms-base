@@ -74,6 +74,10 @@ module.exports = class BasePlugin extends akasha.Plugin {
 			return "";
 		}
 	}
+
+	doGoogleSitemap(metadata) {
+		return akasha.partialSync(this._config, 'ak_sitemap.html.ejs', metadata);
+	}
 }
 
 
