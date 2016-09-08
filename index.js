@@ -24,6 +24,7 @@ const util = require('util');
 const url   = require('url');
 const async = require('async');
 const akasha = require('akasharender');
+const mahabhuta = require('mahabhuta');
 
 const log   = require('debug')('akasha:base-plugin');
 const error = require('debug')('akasha:error-base-plugin');
@@ -122,69 +123,49 @@ var akDoHeaderMeta = function(metadata) {
 	return akasha.partial(metadata.config, "ak_headermeta.html.ejs", fixHeaderMeta(metadata));
 };
 
-module.exports.mahabhuta = [
-		function($, metadata, dirty, done) {
-            var titles = [];
-            $('ak-page-title').each(function(i, elem) { titles.push(elem); });
-			if (titles.length <= 0) return done();
-        	log('ak-page-title');
-            async.eachSeries(titles,
-            (titleTag, next) => {
-            	var title;
-				if (typeof metadata.pagetitle !== "undefined") {
-					title = metadata.pagetitle;
-				} else if (typeof metadata.title !== "undefined") {
-					title = metadata.title;
-				} else title = "";
-				akasha.partial(metadata.config, "ak_titletag.html.ejs", {
-					title: title
-				})
-				.then(rendered => {
-					$(titleTag).replaceWith(rendered);
-					next();
-				})
-				.catch(err => { error(err); next(err); });
-            },
-            (err) => {
-            	if (err) {
-					error('ak-page-title Errored with '+ util.inspect(err));
-					done(err);
-            	} else done();
-            });
-        },
+class PageTitleElement extends mahabhuta.CustomElement {
+	get elementName() { return "ak-page-title"; }
+	process($element, metadata, dirty) {
+		var title;
+		if (typeof metadata.pagetitle !== "undefined") {
+			title = metadata.pagetitle;
+		} else if (typeof metadata.title !== "undefined") {
+			title = metadata.title;
+		} else title = "";
+		return Promise.resolve(`<title>${title}</title>`);
+	}
+}
 
-		function($, metadata, dirty, done) {
-            var metas = [];
-            $('ak-header-metatags').each((i, elem) => { metas.push(elem); });
-			if (metas.length <= 0) return done();
-        	log('ak-header-metatags');
-            async.eachSeries(metas,
-            function(meta, next) {
-            	akDoHeaderMeta(metadata)
-				.then(rendered => {
-					$(meta).replaceWith(rendered);
-					next();
-            	})
-				.catch(err => {
-					error('ak-header-metatags ERROR '+ util.inspect(err));
-					next(err);
-				});
-            },
-            function(err) {
-				if (err) {
-					error('ak-header-metatags Errored with '+ util.inspect(err));
-					done(err);
-				} else done();
-            });
-        },
+class HeaderMetatagsElement extends mahabhuta.CustomElement {
+	get elementName() { return "ak-header-metatags"; }
+	process($element, metadata, dirty, done) {
+		return akDoHeaderMeta(metadata);
+	}
+}
+
+class XMLSitemap extends mahabhuta.CustomElement {
+	get elementName() { return "ak-sitemapxml"; }
+	process($element, metadata, dirty, done) {
+		// http://microformats.org/wiki/rel-sitemap
+		var href = $element.attr("href");
+		if (!href) href = "/sitemap.xml";
+		var title = $element.attr("title");
+		if (!title) title = "Sitemap";
+		return Promise.resolve(`<link rel="sitemap" type="application/xml" title="${title}" href="${href}" />`);
+	}
+}
+
+module.exports.mahabhuta = [
+	new PageTitleElement(),
+	new HeaderMetatagsElement(),
+	new XMLSitemap(),
 
 		function($, metadata, dirty, done) {
             var elements = [];
             $('ak-header-linkreltags').each((i, elem) => { elements.push(elem); });
 			if (elements.length <= 0) return done();
         	log('ak-header-linkreltags');
-            async.eachSeries(elements,
-            (element, next) => {
+            async.eachSeries(elements, (element, next) => {
                 if (metadata.config.akBase && metadata.config.akBase.linkRelTags) {
                     metadata.config.akBase.linkRelTags.forEach(
 					lrtag => {
@@ -284,28 +265,6 @@ module.exports.mahabhuta = [
             function(err) {
 				if (err) {
 					error('ak-google-analytics Errored with '+ util.inspect(err));
-					done(err);
-				} else done();
-            });
-        },
-
-		function($, metadata, dirty, done) {
-            var elements = [];
-            $('ak-sitemapxml').each(function(i, elem) { elements.push(elem); });
-			if (elements.length <= 0) return done();
-        	log('ak-sitemapxml');
-            async.eachSeries(elements,
-            function(element, next) {
-				akasha.partial(metadata.config, "ak_sitemap.html.ejs", {  })
-				.then(html => {
-					$(element).replaceWith(html);
-					next();
-				})
-				.catch(err => { next(err); });
-            },
-            function(err) {
-				if (err) {
-					error('ak-sitemapxml Errored with '+ util.inspect(err));
 					done(err);
 				} else done();
             });
