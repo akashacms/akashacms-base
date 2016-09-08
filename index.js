@@ -151,7 +151,8 @@ class XMLSitemap extends mahabhuta.CustomElement {
 		if (!href) href = "/sitemap.xml";
 		var title = $element.attr("title");
 		if (!title) title = "Sitemap";
-		return Promise.resolve(`<link rel="sitemap" type="application/xml" title="${title}" href="${href}" />`);
+		dirty();
+		return Promise.resolve(`<xml-sitemap title="${title}" href="${href}" />`);
 	}
 }
 
