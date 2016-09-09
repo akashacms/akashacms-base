@@ -1,6 +1,6 @@
 /**
  *
- * Copyright 2014-2015 David Herron
+ * Copyright 2014-2016 David Herron
  *
  * This file is part of AkashaCMS (http://akashacms.com/).
  *
@@ -81,6 +81,7 @@ module.exports = class BasePlugin extends akasha.Plugin {
 	}
 }
 
+module.exports.mahabhuta = new mahabhuta.MahafuncArray("akashacms-base", {});
 
 var fixHeaderMeta = function(metadata) {
 	var data = {};
@@ -135,6 +136,7 @@ class PageTitleElement extends mahabhuta.CustomElement {
 		return Promise.resolve(`<title>${title}</title>`);
 	}
 }
+module.exports.mahabhuta.addMahafunc(new PageTitleElement());
 
 class HeaderMetatagsElement extends mahabhuta.CustomElement {
 	get elementName() { return "ak-header-metatags"; }
@@ -142,6 +144,7 @@ class HeaderMetatagsElement extends mahabhuta.CustomElement {
 		return akDoHeaderMeta(metadata);
 	}
 }
+module.exports.mahabhuta.addMahafunc(new HeaderMetatagsElement());
 
 class XMLSitemap extends mahabhuta.CustomElement {
 	get elementName() { return "ak-sitemapxml"; }
@@ -155,12 +158,9 @@ class XMLSitemap extends mahabhuta.CustomElement {
 		return Promise.resolve(`<xml-sitemap title="${title}" href="${href}" />`);
 	}
 }
+module.exports.mahabhuta.addMahafunc(new XMLSitemap());
 
-module.exports.mahabhuta = [
-	new PageTitleElement(),
-	new HeaderMetatagsElement(),
-	new XMLSitemap(),
-
+module.exports.mahabhuta.addMahafunc(
 		function($, metadata, dirty, done) {
             var elements = [];
             $('ak-header-linkreltags').each((i, elem) => { elements.push(elem); });
@@ -191,8 +191,9 @@ module.exports.mahabhuta = [
 					done(err);
 				} else done();
             });
-        },
+        });
 
+module.exports.mahabhuta.addMahafunc(
 		function($, metadata, dirty, done) {
             var elements = [];
             $('ak-header-canonical-url').each((i, elem) => { elements.push(elem); });
@@ -222,8 +223,9 @@ module.exports.mahabhuta = [
 					done(err);
 				} else done();
             });
-        },
+        })
 
+module.exports.mahabhuta.addMahafunc(
 		function($, metadata, dirty, done) {
             var elements = [];
             $('ak-siteverification').each((i, elem) => { elements.push(elem); });
@@ -246,8 +248,9 @@ module.exports.mahabhuta = [
 					done(err);
 				} else done();
             });
-        },
+        });
 
+module.exports.mahabhuta.addMahafunc(
 		function($, metadata, dirty, done) {
             var elements = [];
             $('ak-google-analytics').each((i, elem) => { elements.push(elem); });
@@ -269,8 +272,9 @@ module.exports.mahabhuta = [
 					done(err);
 				} else done();
             });
-        },
+        });
 
+module.exports.mahabhuta.addMahafunc(
 		function($, metadata, dirty, done) {
 			if ($('html head').get(0)) {
 				var rssheadermeta = [];
@@ -293,8 +297,9 @@ module.exports.mahabhuta = [
 					else done();
 				});
 			} else done();
-        },
+        });
 
+module.exports.mahabhuta.addMahafunc(
 		function($, metadata, dirty, done) {
 			var elements = [];
 			$('publication-date').each(function(i, elem) { elements.push(elem); });
@@ -317,8 +322,9 @@ module.exports.mahabhuta = [
 				if (err) { error(err); done(err); }
 				else { done(); }
 			});
-        },
+        });
 
+module.exports.mahabhuta.addMahafunc(
 		function($, metadata, dirty, done) {
 			if (metadata.config.authorship) {
 				var auname;
@@ -361,22 +367,23 @@ module.exports.mahabhuta = [
 					});
 				} else done();
 			} else done();
-        },
+        });
 
-        /**
-         * These next two tags / functions are a two-step process for extracting image
-         * references and listing them as meta og:image tags.
-         *
-         * In phase 1 <open-graph-promote-images> should be put in a template, to trigger
-         * the code below.  It simply adds the metaog-promote class to any image found
-         * in the content, and then the <open-graph-promote-images> tag is removed.
-         * That class triggers phase 2.
-         *
-         * In phase 2 - triggered only when there is "html head" present in the DOM -
-         * we take img.metaog-promote images and insert a
-         *			<meta name="og:image" content="...">
-         * tag into the <head> section for each one.
-         */
+/**
+ * These next two tags / functions are a two-step process for extracting image
+ * references and listing them as meta og:image tags.
+ *
+ * In phase 1 <open-graph-promote-images> should be put in a template, to trigger
+ * the code below.  It simply adds the metaog-promote class to any image found
+ * in the content, and then the <open-graph-promote-images> tag is removed.
+ * That class triggers phase 2.
+ *
+ * In phase 2 - triggered only when there is "html head" present in the DOM -
+ * we take img.metaog-promote images and insert a
+ *			<meta name="og:image" content="...">
+ * tag into the <head> section for each one.
+ */
+module.exports.mahabhuta.addMahafunc(
         function($, metadata, dirty, done) {
 			var elements = [];
 			$('open-graph-promote-images').each(function(i,elem){ elements.push(elem); });
@@ -410,9 +417,10 @@ module.exports.mahabhuta = [
 				if (err) { error(err); done(err); }
 				else { done(); }
 			});
-        },
+        });
 
-        /** Handle phase 2 of promoting image href's as og:image meta tags. */
+/** Handle phase 2 of promoting image href's as og:image meta tags. */
+module.exports.mahabhuta.addMahafunc(
         function($, metadata, dirty, done) {
 			if ($('html head').get(0)) {
 				var elements = [];
@@ -455,7 +463,9 @@ module.exports.mahabhuta = [
 					else { done(); }
 				});
 			} else done();
-        },
+        });
+
+module.exports.mahabhuta.addMahafunc(
 		function($, metadata, dirty, done) {
 
             var links = [];
@@ -543,5 +553,4 @@ module.exports.mahabhuta = [
 				if (err) done(err);
 				else done();
         	});
-        }
-];
+        });
