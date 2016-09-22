@@ -29,6 +29,7 @@ const mahabhuta = require('mahabhuta');
 const log   = require('debug')('akasha:base-plugin');
 const error = require('debug')('akasha:error-base-plugin');
 
+// const tmpl_sitemap = `<xml-sitemap title="${title}" href="${href}" />`;
 
 module.exports = class BasePlugin extends akasha.Plugin {
 	constructor() {
@@ -77,7 +78,7 @@ module.exports = class BasePlugin extends akasha.Plugin {
 	}
 
 	doGoogleSitemap(metadata) {
-		return akasha.partialSync(this._config, 'ak_sitemap.html.ejs', metadata);
+		return `<xml-sitemap title="${metadata.title}" href="/sitemap.xml" />`; // akasha.partialSync(this._config, 'ak_sitemap.html.ejs', metadata);
 	}
 }
 
