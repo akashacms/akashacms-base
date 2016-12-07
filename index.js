@@ -78,7 +78,15 @@ module.exports = class BasePlugin extends akasha.Plugin {
 	}
 
 	doGoogleSitemap(metadata) {
-		return `<xml-sitemap title="${metadata.title}" href="/sitemap.xml" />`; // akasha.partialSync(this._config, 'ak_sitemap.html.ejs', metadata);
+        // TBD This is extracted from the Mahabhuta tag, need to extract these parameters
+        //     from somewhere.
+        // http://microformats.org/wiki/rel-sitemap
+        var href = undefined; // $element.attr("href");
+        if (!href) href = "/sitemap.xml";
+        // var title = $element.attr("title");
+        // if (!title) title = "Sitemap";
+        return `<link rel="sitemap" type="application/xml" title="${metadata.title}" href="${href}" />`;
+		// return `<xml-sitemap title="${metadata.title}" href="/sitemap.xml" />`; // akasha.partialSync(this._config, 'ak_sitemap.html.ejs', metadata);
 	}
 }
 
