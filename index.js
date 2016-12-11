@@ -29,8 +29,6 @@ const mahabhuta = require('mahabhuta');
 const log   = require('debug')('akasha:base-plugin');
 const error = require('debug')('akasha:error-base-plugin');
 
-// const tmpl_sitemap = `<xml-sitemap title="${title}" href="${href}" />`;
-
 module.exports = class BasePlugin extends akasha.Plugin {
 	constructor() {
 		super("akashacms-base");
@@ -133,9 +131,11 @@ var akDoHeaderMeta = function(metadata) {
 	return akasha.partial(metadata.config, "ak_headermeta.html.ejs", fixHeaderMeta(metadata));
 };
 
+/* TOO SILLY */
 class PageTitleElement extends mahabhuta.CustomElement {
 	get elementName() { return "ak-page-title"; }
 	process($element, metadata, dirty) {
+        return Promise.reject(new Error("ak-page-title deprecated"))
 		var title;
 		if (typeof metadata.pagetitle !== "undefined") {
 			title = metadata.pagetitle;
@@ -145,7 +145,7 @@ class PageTitleElement extends mahabhuta.CustomElement {
 		return Promise.resolve(`<title>${title}</title>`);
 	}
 }
-module.exports.mahabhuta.addMahafunc(new PageTitleElement());
+module.exports.mahabhuta.addMahafunc(new PageTitleElement()); /* */
 
 class HeaderMetatagsElement extends mahabhuta.CustomElement {
 	get elementName() { return "ak-header-metatags"; }
@@ -155,9 +155,11 @@ class HeaderMetatagsElement extends mahabhuta.CustomElement {
 }
 module.exports.mahabhuta.addMahafunc(new HeaderMetatagsElement());
 
+/* Moved to Mahabhuta */
 class XMLSitemap extends mahabhuta.CustomElement {
 	get elementName() { return "ak-sitemapxml"; }
 	process($element, metadata, dirty, done) {
+        return Promise.reject(new Error("ak-sitemapxml deprecated"))
 		// http://microformats.org/wiki/rel-sitemap
 		var href = $element.attr("href");
 		if (!href) href = "/sitemap.xml";
@@ -167,7 +169,7 @@ class XMLSitemap extends mahabhuta.CustomElement {
 		return Promise.resolve(`<xml-sitemap title="${title}" href="${href}" />`);
 	}
 }
-module.exports.mahabhuta.addMahafunc(new XMLSitemap());
+module.exports.mahabhuta.addMahafunc(new XMLSitemap()); /* */
 
 module.exports.mahabhuta.addMahafunc(
 		function($, metadata, dirty, done) {
@@ -239,6 +241,7 @@ module.exports.mahabhuta.addMahafunc(
             var elements = [];
             $('ak-siteverification').each((i, elem) => { elements.push(elem); });
 			if (elements.length <= 0) return done();
+            return done(new Error("ak-siteverification deprecated, use site-verification instead"));
         	log('ak-siteverification');
             async.eachSeries(elements,
             (element, next) => {
@@ -283,6 +286,7 @@ module.exports.mahabhuta.addMahafunc(
             });
         });
 
+/* Moved to Mahabhuta
 module.exports.mahabhuta.addMahafunc(
 		function($, metadata, dirty, done) {
 			if ($('html head').get(0)) {
@@ -306,7 +310,7 @@ module.exports.mahabhuta.addMahafunc(
 					else done();
 				});
 			} else done();
-        });
+        }); */
 
 module.exports.mahabhuta.addMahafunc(
 		function($, metadata, dirty, done) {
