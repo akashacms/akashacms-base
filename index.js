@@ -19,12 +19,15 @@
 
 'use strict';
 
+const fs    = require('fs');
 const path = require('path');
 const util = require('util');
 const url   = require('url');
 const async = require('async');
+const co    = require('co');
 const akasha = require('akasharender');
 const mahabhuta = require('mahabhuta');
+const smap       = require('sightmap');
 
 const log   = require('debug')('akasha:base-plugin');
 const error = require('debug')('akasha:error-base-plugin');
@@ -86,6 +89,59 @@ module.exports = class BasePlugin extends akasha.Plugin {
         return `<link rel="sitemap" type="application/xml" title="${metadata.title}" href="${href}" />`;
 		// return `<xml-sitemap title="${metadata.title}" href="/sitemap.xml" />`; // akasha.partialSync(this._config, 'ak_sitemap.html.ejs', metadata);
 	}
+
+    generateSitemap(doit) {
+        this._generateSitemapFlag = doit;
+    }
+
+    onSiteRendered(config) {
+        if (!this._generateSitemapFlag) {
+            return Promise.resolve("skipped");
+        }
+        return co(function* () {
+            var rendered_files = [];
+            var documents = yield akasha.documentSearch(config, {
+                renderers: [ akasha.HTMLRenderer ]
+            });
+
+            for (let doc of documents) {
+                var fDate = new Date(doc.stat.mtime);
+                var mm = fDate.getMonth() + 1;
+                if (mm < 10) {
+                    mm = "0" + mm.toString();
+                } else {
+                    mm = mm.toString();
+                }
+                var dd = fDate.getDate();
+                if (dd < 10) {
+                    dd = "0" + dd.toString();
+                } else {
+                    dd = dd.toString();
+                }
+
+                rendered_files.push({
+                    loc: encodeURI(doc.renderpath),
+                    priority: 0.5,
+                    lastmod:  fDate.getUTCFullYear() +"-"+ mm +"-"+ dd
+                })
+            }
+
+            smap(rendered_files);
+            yield new Promise((resolve, reject) => {
+                smap(function(xml) {
+                    fs.writeFile(path.join(config.renderDestination, "sitemap.xml"), xml, 'utf8', function (err) {
+                        if (err) {
+                            reject(err);
+                        } else {
+                            resolve();
+                        }
+                    });
+                });
+            });
+
+            return "okay";
+        })
+    }
 }
 
 module.exports.mahabhuta = new mahabhuta.MahafuncArray("akashacms-base", {});
