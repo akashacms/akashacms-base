@@ -26,12 +26,14 @@
     "type": "git",
     "url": "git://github.com/akashacms/akashacms-base.git"
   },
-  "version": "0.5.1",
+  "version": "0.5.2",
   "engines": {
-    "node": ">=0.10.1"
+    "node": ">=6.1"
   },
   "dependencies": {
     "async": ">=0.1.22",
-    "debug": "^2.2.0"
+    "co": "*",
+    "debug": "^2.2.0",
+    "sightmap": "*"
   }
 }
