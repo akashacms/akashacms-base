@@ -1,6 +1,6 @@
 /**
  *
- * Copyright 2014-2016 David Herron
+ * Copyright 2014-2017 David Herron
  *
  * This file is part of AkashaCMS (http://akashacms.com/).
  *
@@ -213,17 +213,17 @@ module.exports.mahabhuta.addMahafunc(new HeaderMetatagsElement());
 
 /* Moved to Mahabhuta */
 class XMLSitemap extends mahabhuta.CustomElement {
-	get elementName() { return "ak-sitemapxml"; }
-	process($element, metadata, dirty, done) {
+    get elementName() { return "ak-sitemapxml"; }
+    process($element, metadata, dirty, done) {
         return Promise.reject(new Error("ak-sitemapxml deprecated"))
-		// http://microformats.org/wiki/rel-sitemap
-		var href = $element.attr("href");
-		if (!href) href = "/sitemap.xml";
-		var title = $element.attr("title");
-		if (!title) title = "Sitemap";
-		dirty();
-		return Promise.resolve(`<xml-sitemap title="${title}" href="${href}" />`);
-	}
+        // http://microformats.org/wiki/rel-sitemap
+        var href = $element.attr("href");
+        if (!href) href = "/sitemap.xml";
+        var title = $element.attr("title");
+        if (!title) title = "Sitemap";
+        dirty();
+        return Promise.resolve(`<xml-sitemap title="${title}" href="${href}" />`);
+    }
 }
 module.exports.mahabhuta.addMahafunc(new XMLSitemap()); /* */
 
@@ -318,29 +318,13 @@ module.exports.mahabhuta.addMahafunc(
             });
         });
 
-module.exports.mahabhuta.addMahafunc(
-		function($, metadata, dirty, done) {
-            var elements = [];
-            $('ak-google-analytics').each((i, elem) => { elements.push(elem); });
-			if (elements.length <= 0) return done();
-        	log('ak-google-analytics');
-            async.eachSeries(elements,
-            (element, next) => {
-				let ga = metadata.config.plugin('akashacms-base').doGoogleAnalyticsSync();
-				if (ga && ga !== "") {
-					$(element).replaceWith(ga);
-				} else {
-					$(element).remove();
-				}
-				next();
-            },
-            function(err) {
-				if (err) {
-					error('ak-google-analytics Errored with '+ util.inspect(err));
-					done(err);
-				} else done();
-            });
-        });
+class GoogleAnalyticsElement extends mahabhuta.CustomElement {
+    get elementName() { return "ak-google-analytics"; }
+    process($element, metadata, dirty, done) {
+        return metadata.config.plugin('akashacms-base').doGoogleAnalyticsSync();
+    }
+}
+module.exports.mahabhuta.addMahafunc(new GoogleAnalyticsElement());
 
 /* Moved to Mahabhuta
 module.exports.mahabhuta.addMahafunc(
@@ -368,30 +352,17 @@ module.exports.mahabhuta.addMahafunc(
 			} else done();
         }); */
 
-module.exports.mahabhuta.addMahafunc(
-		function($, metadata, dirty, done) {
-			var elements = [];
-			$('publication-date').each(function(i, elem) { elements.push(elem); });
-			if (elements.length <= 0) return done();
-        	log('publication-date');
-			async.eachSeries(elements,
-			function(element, next) {
-				log(metadata.publicationDate);
-				if (metadata.publicationDate) {
-					akasha.partial(metadata.config, "ak_publdate.html.ejs", {
-						publicationDate: metadata.publicationDate
-					})
-					.then(html => {
-						$(element).replaceWith(html);
-						next();
-					})
-					.catch(err => { next(err); });
-				} else next();
-			}, function(err) {
-				if (err) { error(err); done(err); }
-				else { done(); }
-			});
-        });
+class PublicationDateElement extends mahabhuta.CustomElement {
+    get elementName() { return "publication-date"; }
+    process($element, metadata, dirty, done) {
+        if (metadata.publicationDate) {
+            return akasha.partial(metadata.config, "ak_publdate.html.ejs", {
+                publicationDate: metadata.publicationDate
+            });
+        } else return Promise.resolve();
+    }
+}
+module.exports.mahabhuta.addMahafunc(new PublicationDateElement());
 
 module.exports.mahabhuta.addMahafunc(
 		function($, metadata, dirty, done) {
