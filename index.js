@@ -320,7 +320,7 @@ module.exports.mahabhuta.addMahafunc(
 
 class GoogleAnalyticsElement extends mahabhuta.CustomElement {
     get elementName() { return "ak-google-analytics"; }
-    process($element, metadata, dirty, done) {
+    process($element, metadata, dirty) {
         return metadata.config.plugin('akashacms-base').doGoogleAnalyticsSync();
     }
 }
