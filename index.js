@@ -119,8 +119,11 @@ module.exports = class BasePlugin extends akasha.Plugin {
                     dd = dd.toString();
                 }
 
+                var baseURL = url.parse(config.root_url);
+                baseURL.pathname = doc.renderpath;
+
                 rendered_files.push({
-                    loc: encodeURI(doc.renderpath),
+                    loc: baseURL.format(),
                     priority: 0.5,
                     lastmod:  fDate.getUTCFullYear() +"-"+ mm +"-"+ dd
                 })
@@ -227,70 +230,41 @@ class XMLSitemap extends mahabhuta.CustomElement {
 }
 module.exports.mahabhuta.addMahafunc(new XMLSitemap()); /* */
 
-module.exports.mahabhuta.addMahafunc(
-		function($, metadata, dirty, done) {
-            var elements = [];
-            $('ak-header-linkreltags').each((i, elem) => { elements.push(elem); });
-			if (elements.length <= 0) return done();
-        	log('ak-header-linkreltags');
-            async.eachSeries(elements, (element, next) => {
-                if (metadata.config.akBase && metadata.config.akBase.linkRelTags) {
-                    metadata.config.akBase.linkRelTags.forEach(
-					lrtag => {
-					    akasha.partial(metadata.config, "ak_linkreltag.html.ejs", {
-					        relationship: lrtag.relationship,
-					        url: lrtag.url
-					    })
-						.then(rendered => {
-    						if (err) { error(err); next(err); }
-    						else { $(element).replaceWith(rendered); next(); }
-    					})
-						.catch(err => { next(err); });
+class LinkRelTagsElement extends mahabhuta.CustomElement {
+    get elementName() { return "ak-header-linkreltags"; }
+    process($element, metadata, dirty) {
+        if (metadata.config.akBase && metadata.config.akBase.linkRelTags) {
+            return co(function* () {
+                var ret = "";
+                for (var lrtag of metadata.config.akBase.linkRelTags) {
+                    ret += yield akasha.partial(metadata.config, "ak_linkreltag.html.ejs", {
+                        relationship: lrtag.relationship,
+                        url: lrtag.url
                     });
-                } else {
-					$(element).remove();
-					next();
                 }
-            },
-            (err) => {
-				if (err) {
-					error('ak-header-linkreltags Errored with '+ util.inspect(err));
-					done(err);
-				} else done();
+                return ret;
             });
+        } else {
+            return Promise.resolve("");
+        }
+        return akasha.partial(metadata.config, "ak_linkreltag.html.ejs", {
+            relationship: "canonical",
+            url: metadata.rendered_url
         });
+    }
+}
+module.exports.mahabhuta.addMahafunc(new LinkRelTagsElement());
 
-module.exports.mahabhuta.addMahafunc(
-		function($, metadata, dirty, done) {
-            var elements = [];
-            $('ak-header-canonical-url').each((i, elem) => { elements.push(elem); });
-			if (elements.length <= 0) return done();
-        	log('ak-header-canonical-url');
-            async.eachSeries(elements,
-            (element, next) => {
-				if (typeof metadata.rendered_url !== "undefined") {
-					akasha.partial(metadata.config, "ak_linkreltag.html.ejs", {
-						relationship: "canonical",
-						url: metadata.rendered_url
-					})
-					.then(rendered => {
-						if (err) { error(err); next(err); }
-						else { $(element).replaceWith(rendered); next(); }
-					})
-					.catch(err => { next(err); });
-				}
-				else {
-					$(element).remove();
-					next();
-				}
-            },
-            function(err) {
-				if (err) {
-					error('ak-header-canonical-url Errored with '+ util.inspect(err));
-					done(err);
-				} else done();
-            });
-        })
+class CanonicalURLElement extends mahabhuta.CustomElement {
+    get elementName() { return "ak-header-canonical-url"; }
+    process($element, metadata, dirty) {
+        return akasha.partial(metadata.config, "ak_linkreltag.html.ejs", {
+            relationship: "canonical",
+            url: metadata.rendered_url
+        });
+    }
+}
+module.exports.mahabhuta.addMahafunc(new CanonicalURLElement());
 
 module.exports.mahabhuta.addMahafunc(
 		function($, metadata, dirty, done) {
@@ -298,7 +272,7 @@ module.exports.mahabhuta.addMahafunc(
             $('ak-siteverification').each((i, elem) => { elements.push(elem); });
 			if (elements.length <= 0) return done();
             return done(new Error("ak-siteverification deprecated, use site-verification instead"));
-        	log('ak-siteverification');
+        	/* log('ak-siteverification');
             async.eachSeries(elements,
             (element, next) => {
 				let sv = metadata.config.plugin('akashacms-base').doGoogleSiteVerification();
@@ -315,7 +289,7 @@ module.exports.mahabhuta.addMahafunc(
 					error('ak-siteverification Errored with '+ util.inspect(err));
 					done(err);
 				} else done();
-            });
+            }); */
         });
 
 class GoogleAnalyticsElement extends mahabhuta.CustomElement {
