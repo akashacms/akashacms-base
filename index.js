@@ -65,7 +65,7 @@ module.exports = class BasePlugin extends akasha.Plugin {
             : "";
     }
 
-    googleAnalytics(analyticsAccount, analyticsDomain) {
+    /* googleAnalytics(analyticsAccount, analyticsDomain) {
         this[_plugin_config].pluginData(pluginName).googleAnalyticsAccount = analyticsAccount;
         this[_plugin_config].pluginData(pluginName).googleAnalyticsDomain = analyticsDomain;
         return this;
@@ -81,7 +81,7 @@ module.exports = class BasePlugin extends akasha.Plugin {
         } else {
             return "";
         }
-    }
+    } */
 
     doGoogleSitemap(metadata) {
         // TBD This is extracted from the Mahabhuta tag, need to extract these parameters
@@ -224,13 +224,13 @@ class XMLSitemap extends mahabhuta.CustomElement {
     get elementName() { return "ak-sitemapxml"; }
     process($element, metadata, dirty, done) {
         return Promise.reject(new Error("ak-sitemapxml deprecated"))
-        // http://microformats.org/wiki/rel-sitemap
+        /* // http://microformats.org/wiki/rel-sitemap
         var href = $element.attr("href");
         if (!href) href = "/sitemap.xml";
         var title = $element.attr("title");
         if (!title) title = "Sitemap";
         dirty();
-        return Promise.resolve(`<xml-sitemap title="${title}" href="${href}" />`);
+        return Promise.resolve(`<xml-sitemap title="${title}" href="${href}" />`); */
     }
 }
 module.exports.mahabhuta.addMahafunc(new XMLSitemap()); /* */
@@ -300,7 +300,8 @@ module.exports.mahabhuta.addMahafunc(
 class GoogleAnalyticsElement extends mahabhuta.CustomElement {
     get elementName() { return "ak-google-analytics"; }
     process($element, metadata, dirty) {
-        return Promise.resolve(metadata.config.plugin('akashacms-base').doGoogleAnalyticsSync());
+        return Promise.reject("ak-google-analytics deprecated")
+        // return Promise.resolve(metadata.config.plugin('akashacms-base').doGoogleAnalyticsSync());
     }
 }
 module.exports.mahabhuta.addMahafunc(new GoogleAnalyticsElement());
