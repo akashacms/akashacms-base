@@ -20,8 +20,8 @@
 'use strict';
 
 const fs    = require('fs');
-const path = require('path');
-const util = require('util');
+const path  = require('path');
+const util  = require('util');
 const url   = require('url');
 const async = require('async');
 const co    = require('co');
@@ -32,53 +32,58 @@ const smap       = require('sightmap');
 const log   = require('debug')('akasha:base-plugin');
 const error = require('debug')('akasha:error-base-plugin');
 
+const pluginName = "akashacms-base";
+
+const _plugin_config = Symbol('config');
+
 module.exports = class BasePlugin extends akasha.Plugin {
-	constructor() {
-		super("akashacms-base");
-	}
+    constructor() {
+        super(pluginName);
+    }
 
-	configure(config) {
-        this._config = config;
-		config.addPartialsDir(path.join(__dirname, 'partials'));
-		config.addLayoutsDir(path.join(__dirname, 'layout'));
-		config.addAssetsDir(path.join(__dirname, 'assets'));
-		config.addMahabhuta(module.exports.mahabhuta);
-	}
+    configure(config) {
+        this[_plugin_config] = config;
+        config.addPartialsDir(path.join(__dirname, 'partials'));
+        config.addLayoutsDir(path.join(__dirname, 'layout'));
+        config.addAssetsDir(path.join(__dirname, 'assets'));
+        config.addMahabhuta(module.exports.mahabhuta);
+    }
 
-	doHeaderMetaSync(metadata) {
-	    return akasha.partialSync(this._config, "ak_headermeta.html.ejs", fixHeaderMeta(metadata));
-	}
+    doHeaderMetaSync(metadata) {
+        return akasha.partialSync(this[_plugin_config], "ak_headermeta.html.ejs", fixHeaderMeta(metadata));
+    }
 
-	googleSiteVerification(code) {
-		this._googleSiteVerification = code;
-		return this;
-	}
+    googleSiteVerification(code) {
+        this[_plugin_config].pluginData(pluginName).googleSiteVerification = code;
+        return this;
+    }
 
-	doGoogleSiteVerification() {
-		return this._googleSiteVerification
-			? akasha.partialSync(this._config, "ak_siteverification.html.ejs",
-				{ googleSiteVerification: this._googleSiteVerification })
-			: "";
-	}
+    doGoogleSiteVerification() {
+        return this[_plugin_config].pluginData(pluginName).googleSiteVerification
+            ? akasha.partialSync(this[_plugin_config], "ak_siteverification.html.ejs",
+                { googleSiteVerification: this[_plugin_config].pluginData(pluginName).googleSiteVerification })
+            : "";
+    }
 
-	googleAnalytics(analyticsAccount, analyticsDomain) {
-		this._googleAnalyticsAccount = analyticsAccount;
-		this._googleAnalyticsDomain = analyticsDomain;
-		return this;
-	}
+    googleAnalytics(analyticsAccount, analyticsDomain) {
+        this[_plugin_config].pluginData(pluginName).googleAnalyticsAccount = analyticsAccount;
+        this[_plugin_config].pluginData(pluginName).googleAnalyticsDomain = analyticsDomain;
+        return this;
+    }
 
-	doGoogleAnalyticsSync() {
-		if (this._googleAnalyticsAccount && this._googleAnalyticsAccount) {
-			return akasha.partialSync(this._config, "ak_googleAnalytics.html.ejs", {
-				googleAnalyticsAccount: this._googleAnalyticsAccount,
-				googleAnalyticsDomain: this._googleAnalyticsAccount
-			});
-		} else {
-			return "";
-		}
-	}
+    doGoogleAnalyticsSync() {
+        if (this[_plugin_config].pluginData(pluginName).googleAnalyticsAccount
+         && this[_plugin_config].pluginData(pluginName).googleAnalyticsDomain) {
+            return akasha.partialSync(this[_plugin_config], "ak_googleAnalytics.html.ejs", {
+                googleAnalyticsAccount: this[_plugin_config].pluginData(pluginName).googleAnalyticsAccount,
+                googleAnalyticsDomain: this[_plugin_config].pluginData(pluginName).googleAnalyticsDomain
+            });
+        } else {
+            return "";
+        }
+    }
 
-	doGoogleSitemap(metadata) {
+    doGoogleSitemap(metadata) {
         // TBD This is extracted from the Mahabhuta tag, need to extract these parameters
         //     from somewhere.
         // http://microformats.org/wiki/rel-sitemap
@@ -87,15 +92,15 @@ module.exports = class BasePlugin extends akasha.Plugin {
         // var title = $element.attr("title");
         // if (!title) title = "Sitemap";
         return `<link rel="sitemap" type="application/xml" title="${metadata.title}" href="${href}" />`;
-		// return `<xml-sitemap title="${metadata.title}" href="/sitemap.xml" />`; // akasha.partialSync(this._config, 'ak_sitemap.html.ejs', metadata);
-	}
+        // return `<xml-sitemap title="${metadata.title}" href="/sitemap.xml" />`; // akasha.partialSync(this._config, 'ak_sitemap.html.ejs', metadata);
+    }
 
     generateSitemap(doit) {
-        this._generateSitemapFlag = doit;
+        this[_plugin_config].pluginData(pluginName).generateSitemapFlag = doit;
     }
 
     onSiteRendered(config) {
-        if (!this._generateSitemapFlag) {
+        if (!this[_plugin_config].pluginData(pluginName).generateSitemapFlag) {
             return Promise.resolve("skipped");
         }
         return co(function* () {
@@ -333,7 +338,7 @@ class PublicationDateElement extends mahabhuta.CustomElement {
             return akasha.partial(metadata.config, "ak_publdate.html.ejs", {
                 publicationDate: metadata.publicationDate
             });
-        } else return Promise.resolve();
+        } else return Promise.resolve("");
     }
 }
 module.exports.mahabhuta.addMahafunc(new PublicationDateElement());
