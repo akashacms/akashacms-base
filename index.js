@@ -53,7 +53,7 @@ module.exports = class BasePlugin extends akasha.Plugin {
         return akasha.partialSync(this[_plugin_config], "ak_headermeta.html.ejs", fixHeaderMeta(metadata));
     }
 
-    googleSiteVerification(code) {
+    /* googleSiteVerification(code) {
         this[_plugin_config].pluginData(pluginName).googleSiteVerification = code;
         return this;
     }
@@ -63,7 +63,7 @@ module.exports = class BasePlugin extends akasha.Plugin {
             ? akasha.partialSync(this[_plugin_config], "ak_siteverification.html.ejs",
                 { googleSiteVerification: this[_plugin_config].pluginData(pluginName).googleSiteVerification })
             : "";
-    }
+    } */
 
     /* googleAnalytics(analyticsAccount, analyticsDomain) {
         this[_plugin_config].pluginData(pluginName).googleAnalyticsAccount = analyticsAccount;
