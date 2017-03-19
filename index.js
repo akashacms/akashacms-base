@@ -34,54 +34,21 @@ const error = require('debug')('akasha:error-base-plugin');
 
 const pluginName = "akashacms-base";
 
-const _plugin_config = Symbol('config');
-
 module.exports = class BasePlugin extends akasha.Plugin {
     constructor() {
         super(pluginName);
     }
 
     configure(config) {
-        this[_plugin_config] = config;
         config.addPartialsDir(path.join(__dirname, 'partials'));
         config.addLayoutsDir(path.join(__dirname, 'layout'));
         config.addAssetsDir(path.join(__dirname, 'assets'));
         config.addMahabhuta(module.exports.mahabhuta);
     }
 
-    doHeaderMetaSync(metadata) {
-        return akasha.partialSync(this[_plugin_config], "ak_headermeta.html.ejs", fixHeaderMeta(metadata));
+    doHeaderMetaSync(config, metadata) {
+        return akasha.partialSync(config, "ak_headermeta.html.ejs", fixHeaderMeta(metadata));
     }
-
-    /* googleSiteVerification(code) {
-        this[_plugin_config].pluginData(pluginName).googleSiteVerification = code;
-        return this;
-    }
-
-    doGoogleSiteVerification() {
-        return this[_plugin_config].pluginData(pluginName).googleSiteVerification
-            ? akasha.partialSync(this[_plugin_config], "ak_siteverification.html.ejs",
-                { googleSiteVerification: this[_plugin_config].pluginData(pluginName).googleSiteVerification })
-            : "";
-    } */
-
-    /* googleAnalytics(analyticsAccount, analyticsDomain) {
-        this[_plugin_config].pluginData(pluginName).googleAnalyticsAccount = analyticsAccount;
-        this[_plugin_config].pluginData(pluginName).googleAnalyticsDomain = analyticsDomain;
-        return this;
-    }
-
-    doGoogleAnalyticsSync() {
-        if (this[_plugin_config].pluginData(pluginName).googleAnalyticsAccount
-         && this[_plugin_config].pluginData(pluginName).googleAnalyticsDomain) {
-            return akasha.partialSync(this[_plugin_config], "ak_googleAnalytics.html.ejs", {
-                googleAnalyticsAccount: this[_plugin_config].pluginData(pluginName).googleAnalyticsAccount,
-                googleAnalyticsDomain: this[_plugin_config].pluginData(pluginName).googleAnalyticsDomain
-            });
-        } else {
-            return "";
-        }
-    } */
 
     doGoogleSitemap(metadata) {
         // TBD This is extracted from the Mahabhuta tag, need to extract these parameters
@@ -95,12 +62,12 @@ module.exports = class BasePlugin extends akasha.Plugin {
         // return `<xml-sitemap title="${metadata.title}" href="/sitemap.xml" />`; // akasha.partialSync(this._config, 'ak_sitemap.html.ejs', metadata);
     }
 
-    generateSitemap(doit) {
-        this[_plugin_config].pluginData(pluginName).generateSitemapFlag = doit;
+    generateSitemap(config, doit) {
+        config.pluginData(pluginName).generateSitemapFlag = doit;
     }
 
     onSiteRendered(config) {
-        if (!this[_plugin_config].pluginData(pluginName).generateSitemapFlag) {
+        if (!config.pluginData(pluginName).generateSitemapFlag) {
             return Promise.resolve("skipped");
         }
         return co(function* () {
@@ -199,14 +166,7 @@ var akDoHeaderMeta = function(metadata) {
 class PageTitleElement extends mahabhuta.CustomElement {
 	get elementName() { return "ak-page-title"; }
 	process($element, metadata, dirty) {
-        return Promise.reject(new Error("ak-page-title deprecated"))
-		var title;
-		if (typeof metadata.pagetitle !== "undefined") {
-			title = metadata.pagetitle;
-		} else if (typeof metadata.title !== "undefined") {
-			title = metadata.title;
-		} else title = "";
-		return Promise.resolve(`<title>${title}</title>`);
+        return Promise.reject(new Error("ak-page-title deprecated"));
 	}
 }
 module.exports.mahabhuta.addMahafunc(new PageTitleElement()); /* */
@@ -223,14 +183,7 @@ module.exports.mahabhuta.addMahafunc(new HeaderMetatagsElement());
 class XMLSitemap extends mahabhuta.CustomElement {
     get elementName() { return "ak-sitemapxml"; }
     process($element, metadata, dirty, done) {
-        return Promise.reject(new Error("ak-sitemapxml deprecated"))
-        /* // http://microformats.org/wiki/rel-sitemap
-        var href = $element.attr("href");
-        if (!href) href = "/sitemap.xml";
-        var title = $element.attr("title");
-        if (!title) title = "Sitemap";
-        dirty();
-        return Promise.resolve(`<xml-sitemap title="${title}" href="${href}" />`); */
+        return Promise.reject(new Error("ak-sitemapxml deprecated"));
     }
 }
 module.exports.mahabhuta.addMahafunc(new XMLSitemap()); /* */
@@ -277,60 +230,15 @@ module.exports.mahabhuta.addMahafunc(
             $('ak-siteverification').each((i, elem) => { elements.push(elem); });
 			if (elements.length <= 0) return done();
             return done(new Error("ak-siteverification deprecated, use site-verification instead"));
-        	/* log('ak-siteverification');
-            async.eachSeries(elements,
-            (element, next) => {
-				let sv = metadata.config.plugin('akashacms-base').doGoogleSiteVerification();
-				// console.log(`Site Verification ${sv}`);
-				if (sv && sv !== "") {
-					$(element).replaceWith(sv);
-				} else {
-					$(element).remove();
-				}
-				next();
-            },
-            (err) => {
-				if (err) {
-					error('ak-siteverification Errored with '+ util.inspect(err));
-					done(err);
-				} else done();
-            }); */
         });
 
 class GoogleAnalyticsElement extends mahabhuta.CustomElement {
     get elementName() { return "ak-google-analytics"; }
     process($element, metadata, dirty) {
         return Promise.reject("ak-google-analytics deprecated")
-        // return Promise.resolve(metadata.config.plugin('akashacms-base').doGoogleAnalyticsSync());
     }
 }
 module.exports.mahabhuta.addMahafunc(new GoogleAnalyticsElement());
-
-/* Moved to Mahabhuta
-module.exports.mahabhuta.addMahafunc(
-		function($, metadata, dirty, done) {
-			if ($('html head').get(0)) {
-				var rssheadermeta = [];
-				$('rss-header-meta').each(function(i, elem){ rssheadermeta.push(elem); });
-				if (rssheadermeta.length <= 0) return done();
-				log('rss-header-meta');
-				async.eachSeries(rssheadermeta,
-				function(rssmeta, next) {
-					var href = $(rssmeta).attr('href');
-					if (href) {
-						$('head').append(
-							'<link rel="alternate" type="application/rss+xml" href="'+href+'" />'
-						);
-					} else error('no href= tag in rss-header-meta ... skipped');
-					$(rssmeta).remove();
-					next();
-				},
-				function(err) {
-					if (err) done(err);
-					else done();
-				});
-			} else done();
-        }); */
 
 class PublicationDateElement extends mahabhuta.CustomElement {
     get elementName() { return "publication-date"; }
