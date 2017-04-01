@@ -313,38 +313,36 @@ module.exports.mahabhuta.addMahafunc(
  */
 module.exports.mahabhuta.addMahafunc(
         function($, metadata, dirty, done) {
-			var elements = [];
-			$('open-graph-promote-images').each(function(i,elem){ elements.push(elem); });
-			if (elements.length <= 0) return done();
-        	log('open-graph-promote-images');
-			async.eachSeries(elements,
-			function(element, next) {
-				$(element).remove();
-				var imgz = [];
-				var selector = $(element).attr('root')
-						? ($(element).attr('root') +' img')
-						: 'img';
-				$(selector).each(function(i, elem) { imgz.push(elem); });
-				async.eachSeries(imgz,
-				function(img, next2) {
-					var imgurl = $(img).attr('src');
-					if (imgurl.match(/\/img\/extlink.png/)
-					 || imgurl.match(/\/img\/rss_button.png/)
-					 || imgurl.match(/\/img\/rss_button.gif/)) {
-						// Ignore these images
-					} else {
-						$(img).addClass('metaog-promote');
-					}
-					next2();
-
-				}, function(err) {
-					if (err) next(err);
-					else next();
-				});
-			}, function(err) {
-				if (err) { error(err); done(err); }
-				else { done(); }
-			});
+            var elements = [];
+            $('open-graph-promote-images').each(function(i,elem){ elements.push(elem); });
+            if (elements.length <= 0) return done();
+            try {
+                for (var element of elements) {
+                    var imgz = [];
+                    var selector = $(element).attr('root')
+                            ? ($(element).attr('root') +' img')
+                            : 'img';
+                    $(selector).each(function(i, elem) { imgz.push(elem); });
+                    for (var img of imgz) {
+                        var imgurl = $(img).attr('src');
+                        if (imgurl.match(/\/img\/extlink.png$/)
+                         || imgurl.match(/\/img\/rss_button.png$/)
+                         || imgurl.match(/\/img\/rss_button.gif$/)) {
+                             // Ignore these images
+                        } else {
+                            if (!$(img).hasClass('metaog-promoted')) {
+                                $(img).addClass('metaog-promote');
+                                $(img).addClass('metaog-promoted');
+                                dirty();
+                            }
+                        }
+                    }
+                    $(element).addClass('metaog-processed');
+                }
+            } catch (err) {
+                if (err) { error(err); return done(err); }
+            }
+            done();
         });
 
 /** Handle phase 2 of promoting image href's as og:image meta tags. */
@@ -387,6 +385,12 @@ module.exports.mahabhuta.addMahafunc(
 					})
 					.catch(err => { next(err); });
 				}, function(err) {
+                    $('open-graph-promote-images.metaog-processed').each((i, elem) => {
+                        $(elem).remove();
+                    });
+                    $('img.metaog-promoted').each((i, elem) => {
+                        $(elem).removeClass('metaog-promoted');
+                    });
 					if (err) { error(err); done(err); }
 					else { done(); }
 				});
