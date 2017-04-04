@@ -196,10 +196,10 @@ module.exports.mahabhuta.addMahafunc(new XMLSitemap()); /* */
 class LinkRelTagsElement extends mahabhuta.CustomElement {
     get elementName() { return "ak-header-linkreltags"; }
     process($element, metadata, dirty) {
-        if (config.pluginData(pluginName).linkRelTags.length > 0) {
+        if (metadata.config.pluginData(pluginName).linkRelTags.length > 0) {
             return co(function* () {
                 var ret = "";
-                for (var lrtag of config.pluginData(pluginName).linkRelTags) {
+                for (var lrtag of metadata.config.pluginData(pluginName).linkRelTags) {
                     ret += yield akasha.partial(metadata.config, "ak_linkreltag.html.ejs", {
                         relationship: lrtag.relationship,
                         url: lrtag.url
