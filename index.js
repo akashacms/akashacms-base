@@ -44,10 +44,15 @@ module.exports = class BasePlugin extends akasha.Plugin {
         config.addLayoutsDir(path.join(__dirname, 'layout'));
         config.addAssetsDir(path.join(__dirname, 'assets'));
         config.addMahabhuta(module.exports.mahabhuta);
+        config.pluginData(pluginName).linkRelTags = [];
     }
 
     doHeaderMetaSync(config, metadata) {
         return akasha.partialSync(config, "ak_headermeta.html.ejs", fixHeaderMeta(metadata));
+    }
+
+    addLinkRelTag(config, lrTag) {
+        config.pluginData(pluginName).linkRelTags.push(lrTag);
     }
 
     doGoogleSitemap(metadata) {
@@ -191,10 +196,10 @@ module.exports.mahabhuta.addMahafunc(new XMLSitemap()); /* */
 class LinkRelTagsElement extends mahabhuta.CustomElement {
     get elementName() { return "ak-header-linkreltags"; }
     process($element, metadata, dirty) {
-        if (metadata.config.akBase && metadata.config.akBase.linkRelTags) {
+        if (config.pluginData(pluginName).linkRelTags.length > 0) {
             return co(function* () {
                 var ret = "";
-                for (var lrtag of metadata.config.akBase.linkRelTags) {
+                for (var lrtag of config.pluginData(pluginName).linkRelTags) {
                     ret += yield akasha.partial(metadata.config, "ak_linkreltag.html.ejs", {
                         relationship: lrtag.relationship,
                         url: lrtag.url
@@ -205,10 +210,6 @@ class LinkRelTagsElement extends mahabhuta.CustomElement {
         } else {
             return Promise.resolve("");
         }
-        return akasha.partial(metadata.config, "ak_linkreltag.html.ejs", {
-            relationship: "canonical",
-            url: metadata.rendered_url
-        });
     }
 }
 module.exports.mahabhuta.addMahafunc(new LinkRelTagsElement());
