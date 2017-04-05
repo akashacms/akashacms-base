@@ -212,8 +212,8 @@ class LinkRelTagsElement extends mahabhuta.CustomElement {
                     ret += yield doLinkRelTag(metadata.config, lrtag);
                 }
             }
-            if (metadata.akbaseLinkRelTags.length > 0) {
-                for (var lrtag of metadata.akbaseLinkRelTags) {
+            if (metadata.config.pluginData(pluginName).linkRelTags.length > 0) {
+                for (var lrtag of metadata.config.pluginData(pluginName).linkRelTags) {
                     ret += yield doLinkRelTag(metadata.config, lrtag);
                 }
             }
