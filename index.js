@@ -53,6 +53,7 @@ module.exports = class BasePlugin extends akasha.Plugin {
 
     addLinkRelTag(config, lrTag) {
         config.pluginData(pluginName).linkRelTags.push(lrTag);
+        return this;
     }
 
     doGoogleSitemap(metadata) {
@@ -69,6 +70,7 @@ module.exports = class BasePlugin extends akasha.Plugin {
 
     generateSitemap(config, doit) {
         config.pluginData(pluginName).generateSitemapFlag = doit;
+        return this;
     }
 
     onSiteRendered(config) {
@@ -193,23 +195,30 @@ class XMLSitemap extends mahabhuta.CustomElement {
 }
 module.exports.mahabhuta.addMahafunc(new XMLSitemap()); /* */
 
+function doLinkRelTag(config, lrtag) {
+    return akasha.partial(metadata.config, "ak_linkreltag.html.ejs", {
+        relationship: lrtag.relationship,
+        url: lrtag.url
+    });
+}
+
 class LinkRelTagsElement extends mahabhuta.CustomElement {
     get elementName() { return "ak-header-linkreltags"; }
     process($element, metadata, dirty) {
-        if (metadata.config.pluginData(pluginName).linkRelTags.length > 0) {
-            return co(function* () {
-                var ret = "";
+        return co(function* () {
+            var ret = "";
+            if (metadata.config.pluginData(pluginName).linkRelTags.length > 0) {
                 for (var lrtag of metadata.config.pluginData(pluginName).linkRelTags) {
-                    ret += yield akasha.partial(metadata.config, "ak_linkreltag.html.ejs", {
-                        relationship: lrtag.relationship,
-                        url: lrtag.url
-                    });
+                    ret += yield doLinkRelTag(metadata.config, lrtag);
                 }
-                return ret;
-            });
-        } else {
-            return Promise.resolve("");
-        }
+            }
+            if (metadata.akbaseLinkRelTags.length > 0) {
+                for (var lrtag of metadata.akbaseLinkRelTags) {
+                    ret += yield doLinkRelTag(metadata.config, lrtag);
+                }
+            }
+            return ret;
+        });
     }
 }
 module.exports.mahabhuta.addMahafunc(new LinkRelTagsElement());
@@ -217,7 +226,7 @@ module.exports.mahabhuta.addMahafunc(new LinkRelTagsElement());
 class CanonicalURLElement extends mahabhuta.CustomElement {
     get elementName() { return "ak-header-canonical-url"; }
     process($element, metadata, dirty) {
-        return akasha.partial(metadata.config, "ak_linkreltag.html.ejs", {
+        return doLinkRelTag(metadata.config, {
             relationship: "canonical",
             url: metadata.rendered_url
         });

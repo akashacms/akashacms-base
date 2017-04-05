@@ -49,7 +49,27 @@ Header tags of the pattern `<link rel="..." href="..."/>` are used for many purp
 
 The `<ak-header-linkreltags>` tag generates the tags from data provided in the site configuration.
 
-TODO THE CODE APPEARS TO BE BROKEN -- it's unclear what to do
+For site-wide link/rel tags use this in `config.js`:
+
+```
+config.plugin("akashacms-base")
+    .addLinkRelTag(config, { relationship: "...", url: ".." })
+    .addLinkRelTag(config, { relationship: "...", url: ".." });
+```
+
+For per-page link/rel tags, use this in the frontmatter:
+
+```
+---
+...
+akbaseLinkRelTags:
+  - relationship: "..."
+    url: "..."
+  - relationship: "..."
+    url: "..."
+...
+---
+```
 
 #### Generate a canonical URL in header
 
