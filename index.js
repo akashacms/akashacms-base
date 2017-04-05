@@ -298,105 +298,58 @@ module.exports.mahabhuta.addMahafunc(
 			} else done();
         });
 
-/**
- * These next two tags / functions are a two-step process for extracting image
- * references and listing them as meta og:image tags.
- *
- * In phase 1 <open-graph-promote-images> should be put in a template, to trigger
- * the code below.  It simply adds the metaog-promote class to any image found
- * in the content, and then the <open-graph-promote-images> tag is removed.
- * That class triggers phase 2.
- *
- * In phase 2 - triggered only when there is "html head" present in the DOM -
- * we take img.metaog-promote images and insert a
- *			<meta name="og:image" content="...">
- * tag into the <head> section for each one.
- */
-module.exports.mahabhuta.addMahafunc(
-        function($, metadata, dirty, done) {
-            var elements = [];
-            $('open-graph-promote-images').each(function(i,elem){ elements.push(elem); });
-            if (elements.length <= 0) return done();
-            try {
-                for (var element of elements) {
-                    var imgz = [];
-                    var selector = $(element).attr('root')
-                            ? ($(element).attr('root') +' img')
-                            : 'img';
-                    $(selector).each(function(i, elem) { imgz.push(elem); });
-                    for (var img of imgz) {
-                        var imgurl = $(img).attr('src');
-                        if (imgurl.match(/\/img\/extlink.png$/)
-                         || imgurl.match(/\/img\/rss_button.png$/)
-                         || imgurl.match(/\/img\/rss_button.gif$/)) {
-                             // Ignore these images
-                        } else {
-                            if (!$(img).hasClass('metaog-promoted')) {
-                                $(img).addClass('metaog-promote');
-                                $(img).addClass('metaog-promoted');
-                                dirty();
+class OpenGraphPromoteImages extends mahabhuta.Munger {
+    get selector() { return "html head open-graph-promote-images"; }
+
+    process($, $link, metadata, dirty) {
+        return co(function* () {
+
+            var selector = $link.attr('root')
+                    ? ($link.attr('root') +' img')
+                    : 'img';
+            var imgz = [];
+            $(selector).each(function(i, elem) { imgz.push(elem); });
+            for (var img of imgz) {
+                var imgurl = $(img).attr('src');
+                if (imgurl.match(/\/img\/extlink.png$/)
+                 || imgurl.match(/\/img\/rss_button.png$/)
+                 || imgurl.match(/\/img\/rss_button.gif$/)) {
+                     // Ignore these images
+                } else {
+                    var href = $(img).attr('src');
+                    if (href && href.length > 0) {
+                        var pHref = url.parse(href);
+                        // In case this is a site-relative URL, fix it up
+                        // to have the full URL.
+                        if (! pHref.host) {
+                            if (pHref.path.match(/^\//)) {
+                                href = metadata.config.root_url + href;
+                            } else {
+                                var pRendered = url.parse(metadata.rendered_url);
+                                var dirRender = path.dirname(pRendered.path);
+                                var pRootUrl = url.parse(metadata.config.root_url);
+                                pRootUrl.pathname = dirRender +'/'+ href;
+                                href = url.format(pRootUrl);
                             }
                         }
                     }
-                    $(element).addClass('metaog-processed');
+                    if ($(`meta[content="${href}"]`).get(0) === undefined) {
+                        var txt = yield akasha.partial(metadata.config, 'ak_metatag.html.ejs', {
+                            tagname: 'og:image',
+                            tagcontent: href
+                        });
+                        if (txt) {
+                            $('head').append(txt);
+                        }
+                    }
                 }
-            } catch (err) {
-                if (err) { error(err); return done(err); }
             }
-            done();
-        });
 
-/** Handle phase 2 of promoting image href's as og:image meta tags. */
-module.exports.mahabhuta.addMahafunc(
-        function($, metadata, dirty, done) {
-			if ($('html head').get(0)) {
-				var elements = [];
-				$('img.metaog-promote').each(function(i,elem) {
-					elements.push(elem);
-				});
-				if (elements.length <= 0) return done();
-				log('img.metaog-promote');
-				async.eachSeries(elements,
-				function(element, next) {
-					$(element).removeClass('metaog-promote');
-					var href = $(element).attr('src');
-					if (href && href.length > 0) {
-						var pHref = url.parse(href);
-						// In case this is a site-relative URL, fix it up
-						// to have the full URL.
-						if (! pHref.host) {
-							if (pHref.path.match(/^\//)) {
-								href = metadata.config.root_url +'/'+ href;
-							} else {
-								var pRendered = url.parse(metadata.rendered_url);
-								var dirRender = path.dirname(pRendered.path);
-								var pRootUrl = url.parse(metadata.config.root_url);
-								pRootUrl.pathname = dirRender +'/'+ href;
-								href = url.format(pRootUrl);
-							}
-						}
-					}
-					akasha.partial(metadata.config, 'ak_metatag.html.ejs', {
-						tagname: 'og:image',
-						tagcontent: href
-					})
-					.then(txt => {
-						$('head').append(txt);
-						next();
-					})
-					.catch(err => { next(err); });
-				}, function(err) {
-                    $('open-graph-promote-images.metaog-processed').each((i, elem) => {
-                        $(elem).remove();
-                    });
-                    $('img.metaog-promoted').each((i, elem) => {
-                        $(elem).removeClass('metaog-promoted');
-                    });
-					if (err) { error(err); done(err); }
-					else { done(); }
-				});
-			} else done();
+            $link.remove();
         });
+    }
+}
+module.exports.mahabhuta.addMahafunc(new OpenGraphPromoteImages());
 
 module.exports.mahabhuta.addMahafunc(
 		function($, metadata, dirty, done) {
