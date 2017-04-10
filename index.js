@@ -313,48 +313,55 @@ class OpenGraphPromoteImages extends mahabhuta.Munger {
     process($, $link, metadata, dirty) {
         return co(function* () {
 
+            var imgcount = 0;
             var selector = $link.attr('root')
                     ? ($link.attr('root') +' img')
                     : 'img';
             var imgz = [];
             $(selector).each(function(i, elem) { imgz.push(elem); });
-            for (var img of imgz) {
-                var imgurl = $(img).attr('src');
-                if (imgurl.match(/\/img\/extlink.png$/)
-                 || imgurl.match(/\/img\/rss_button.png$/)
-                 || imgurl.match(/\/img\/rss_button.gif$/)) {
+            // console.log(`${metadata.rendered_url} image selector ${selector} - gave ${imgz.length} images`);
+            for (let img of imgz) {
+                let href = $(img).attr('src');
+                // console.log(`${metadata.rendered_url} image ${href}`);
+                if (href.match(/\/img\/extlink.png$/)
+                 || href.match(/\/img\/rss_button.png$/)
+                 || href.match(/\/img\/rss_button.gif$/)) {
                      // Ignore these images
                 } else {
-                    var href = $(img).attr('src');
                     if (href && href.length > 0) {
-                        var pHref = url.parse(href);
+                        let pHref = url.parse(href);
                         // In case this is a site-relative URL, fix it up
                         // to have the full URL.
                         if (! pHref.host) {
                             if (pHref.path.match(/^\//)) {
                                 href = metadata.config.root_url + href;
                             } else {
-                                var pRendered = url.parse(metadata.rendered_url);
-                                var dirRender = path.dirname(pRendered.path);
-                                var pRootUrl = url.parse(metadata.config.root_url);
+                                let pRendered = url.parse(metadata.rendered_url);
+                                let dirRender = path.dirname(pRendered.path);
+                                let pRootUrl = url.parse(metadata.config.root_url);
                                 pRootUrl.pathname = dirRender +'/'+ href;
                                 href = url.format(pRootUrl);
                             }
                         }
                     }
                     if ($(`meta[content="${href}"]`).get(0) === undefined) {
-                        var txt = yield akasha.partial(metadata.config, 'ak_metatag.html.ejs', {
+                        let txt = yield akasha.partial(metadata.config, 'ak_metatag.html.ejs', {
                             tagname: 'og:image',
                             tagcontent: href
                         });
                         if (txt) {
+                            // console.log(`${metadata.rendered_url} appending image meta ${txt}`);
+                            imgcount++;
                             $('head').append(txt);
                         }
                     }
                 }
             }
 
-            $link.remove();
+            if (imgcount > 0) {
+                // console.log(`${metadata.rendered_url} removing open-graph-promote-images ${imgcount}`);
+                $link.remove();
+            }
         });
     }
 }
