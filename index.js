@@ -235,10 +235,10 @@ class CanonicalURLElement extends mahabhuta.CustomElement {
 module.exports.mahabhuta.addMahafunc(new CanonicalURLElement());
 
 module.exports.mahabhuta.addMahafunc(
-		function($, metadata, dirty, done) {
+    function($, metadata, dirty, done) {
             var elements = [];
             $('ak-siteverification').each((i, elem) => { elements.push(elem); });
-			if (elements.length <= 0) return done();
+            if (elements.length <= 0) return done();
             return done(new Error("ak-siteverification deprecated, use site-verification instead"));
         });
 
