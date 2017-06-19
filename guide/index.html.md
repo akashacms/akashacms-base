@@ -12,12 +12,10 @@ With an AkashaCMS website setup, add the following to `package.json`
 ```
   "dependencies": {
     ...
-    "akashacms-base": "akashacms/akashacms-base#akasharender",
+    "akashacms-base": ">0.6",
     ...
   }
 ```
-
-The AkashaRender version of `akashacms-base` has not been published to `npm` yet, and therefore must be referenced this way.
 
 Once added to `package.json` run: `npm install`
 
