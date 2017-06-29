@@ -314,10 +314,16 @@ class OpenGraphPromoteImages extends mahabhuta.Munger {
         return co(function* () {
 
             var imgcount = 0;
+            // Look for <img> tags
             var selector = $link.attr('root')
                     ? ($link.attr('root') +' img')
                     : 'img';
             var imgz = [];
+            $(selector).each(function(i, elem) { imgz.push(elem); });
+            // Look for <meta-og-image> tags
+            var selector = $link.attr('root')
+                    ? ($link.attr('root') +' meta-og-image')
+                    : 'meta-og-image';
             $(selector).each(function(i, elem) { imgz.push(elem); });
             // console.log(`${metadata.rendered_url} image selector ${selector} - gave ${imgz.length} images`);
             for (let img of imgz) {
