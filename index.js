@@ -262,50 +262,30 @@ class PublicationDateElement extends mahabhuta.CustomElement {
 }
 module.exports.mahabhuta.addMahafunc(new PublicationDateElement());
 
-module.exports.mahabhuta.addMahafunc(
-		function($, metadata, dirty, done) {
-			if (metadata.config.authorship) {
-				var auname;
-				if (!metadata.authorname && metadata.config.authorship.defaultAuthorName) {
-					auname = metadata.config.authorship.defaultAuthorName;
-				} else if (metadata.authorname) {
-					auname = metadata.authorname;
-				}
-				if (auname) {
-					var elements = [];
-					$('author-link').each(function(i, elem) { elements.push(elem); });
-					if (elements.length <= 0) return done();
-					log('author-link');
-					async.eachSeries(elements,
-					function(element, next) {
-						var author;
-						for (var i in metadata.config.authorship.authors) {
-							if (metadata.config.authorship.authors[i].name === auname) {
-								author = metadata.config.authorship.authors[i];
-								break;
-							}
-						}
-						if (author) {
-							akasha.partial(metadata.config, "ak_authorship.html.ejs", {
-								fullname: author.fullname,
-								authorship: author.authorship
-							})
-							.then(html => {
-								$(element).replaceWith(html);
-								next();
-							})
-							.catch(err => { next(err); });
-						} else {
-							log('no author data found for '+ auname);
-							next();
-						}
-					}, function(err) {
-						if (err) { error(err); done(err); }
-						else { done(); }
-					});
-				} else done();
-			} else done();
-        });
+// TODO revamp this
+// TODO this doesn't seem to be used anywhere so I haven't tested it.
+class AuthorLinkElement extends mahabhuta.CustomElement {
+    get elementName() { return "author-link"; }
+    process($element, metadata, dirty, done) {
+        var author;
+        for (var i in metadata.config.authorship.authors) {
+            if (metadata.config.authorship.authors[i].name === auname) {
+                author = metadata.config.authorship.authors[i];
+                break;
+            }
+        }
+        if (author) {
+            return akasha.partial(metadata.config, "ak_authorship.html.ejs", {
+                fullname: author.fullname,
+                authorship: author.authorship
+            });
+        } else {
+            console.error(`author-link: no author data found for ${auname} in ${metadata.document.path}`);
+            throw new Error(`author-link: no author data found for ${auname} in ${metadata.document.path}`);
+        }
+    }
+}
+module.exports.mahabhuta.addMahafunc(new AuthorLinkElement());
 
 class OpenGraphPromoteImages extends mahabhuta.Munger {
     get selector() { return "html head open-graph-promote-images"; }
