@@ -267,6 +267,9 @@ module.exports.mahabhuta.addMahafunc(new PublicationDateElement());
 class AuthorLinkElement extends mahabhuta.CustomElement {
     get elementName() { return "author-link"; }
     process($element, metadata, dirty, done) {
+        if (typeof metadata.config.authorship === 'undefined') {
+            return Promise.resolve("");
+        }
         var author;
         for (var i in metadata.config.authorship.authors) {
             if (metadata.config.authorship.authors[i].name === auname) {
