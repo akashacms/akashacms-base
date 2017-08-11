@@ -290,6 +290,26 @@ class AuthorLinkElement extends mahabhuta.CustomElement {
 }
 module.exports.mahabhuta.addMahafunc(new AuthorLinkElement());
 
+class OpenGraphImage extends mahabhuta.Munger {
+    get selector() { return "html body opengraph-image"; }
+    process($, $link, metadata, dirty) {
+        return co(function* () {
+            const href = $link.attr('href');
+            if ($(`meta[content="${href}"]`).get(0) === undefined) {
+                let txt = yield akasha.partial(metadata.config, 'ak_metatag.html.ejs', {
+                    tagname: 'og:image',
+                    tagcontent: href
+                });
+                if (txt) {
+                    $('head').append(txt);
+                }
+            }
+            $link.remove();
+        });
+    }
+}
+module.exports.mahabhuta.addMahafunc(new OpenGraphImage());
+
 class OpenGraphPromoteImages extends mahabhuta.Munger {
     get selector() { return "html head open-graph-promote-images"; }
 
