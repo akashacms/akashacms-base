@@ -267,7 +267,8 @@ module.exports.mahabhuta.addMahafunc(new PublicationDateElement());
 class AuthorLinkElement extends mahabhuta.CustomElement {
     get elementName() { return "author-link"; }
     process($element, metadata, dirty, done) {
-        if (typeof metadata.config.authorship === 'undefined') {
+        throw new Error("author-link disabled");
+        /* if (typeof metadata.config.authorship === 'undefined') {
             return Promise.resolve("");
         }
         var author;
@@ -285,7 +286,7 @@ class AuthorLinkElement extends mahabhuta.CustomElement {
         } else {
             console.error(`author-link: no author data found for ${auname} in ${metadata.document.path}`);
             throw new Error(`author-link: no author data found for ${auname} in ${metadata.document.path}`);
-        }
+        } */
     }
 }
 module.exports.mahabhuta.addMahafunc(new AuthorLinkElement());
