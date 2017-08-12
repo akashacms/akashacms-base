@@ -377,6 +377,8 @@ class OpenGraphPromoteImages extends mahabhuta.Munger {
 }
 module.exports.mahabhuta.addMahafunc(new OpenGraphPromoteImages());
 
+/* This is now in akashacms-external-links
+ *
 module.exports.mahabhuta.addMahafunc(
 		function($, metadata, dirty, done) {
 
@@ -427,7 +429,7 @@ module.exports.mahabhuta.addMahafunc(
 						if (! metadata.config.builtin.suppress.extlink
 						 && $(link).find("img.ak-extlink-icon").length <= 0) {
 							$(link).append('<img class="ak-extlink-icon" src="/img/extlink.png"/>');
-						} */
+						} * /
 
 						next();
 					} else {
@@ -455,7 +457,7 @@ module.exports.mahabhuta.addMahafunc(
             				 && docEntry.frontmatter.yaml.title) {
             					$(link).text(docEntry.frontmatter.yaml.title);
             				}
-            			} */
+            			} * /
             			next();
 					}
 				} else next();
@@ -465,4 +467,4 @@ module.exports.mahabhuta.addMahafunc(
 				if (err) done(err);
 				else done();
         	});
-        });
+        }); */
