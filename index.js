@@ -323,7 +323,11 @@ class OpenGraphPromoteImages extends mahabhuta.Munger {
                     ? ($link.attr('root') +' img')
                     : 'img';
             var imgz = [];
-            $(selector).each(function(i, elem) { imgz.push(elem); });
+            $(selector).each(function(i, elem) {
+                if ($(elem).hasClass('opengraph-promote')
+               || !($(elem).hasClass('opengraph-no-promote')))
+                    imgz.push(elem);
+            });
             // Look for <meta-og-image> tags
             var selector = $link.attr('root')
                     ? ($link.attr('root') +' meta-og-image')
@@ -368,10 +372,7 @@ class OpenGraphPromoteImages extends mahabhuta.Munger {
                 }
             }
 
-            if (imgcount > 0) {
-                // console.log(`${metadata.rendered_url} removing open-graph-promote-images ${imgcount}`);
-                $link.remove();
-            }
+            $link.remove();
         });
     }
 }
