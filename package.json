@@ -31,7 +31,6 @@
     "node": ">=6.1"
   },
   "dependencies": {
-    "async": ">=0.1.22",
     "co": "*",
     "debug": "^2.2.0",
     "sightmap": "*"
