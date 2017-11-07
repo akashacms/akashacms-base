@@ -23,7 +23,6 @@ const fs    = require('fs');
 const path  = require('path');
 const util  = require('util');
 const url   = require('url');
-const co    = require('co');
 const akasha = require('akasharender');
 const mahabhuta = akasha.mahabhuta;
 const smap       = require('sightmap');
@@ -72,56 +71,54 @@ module.exports = class BasePlugin extends akasha.Plugin {
         return this;
     }
 
-    onSiteRendered(config) {
+    async onSiteRendered(config) {
         if (!config.pluginData(pluginName).generateSitemapFlag) {
             return Promise.resolve("skipped");
         }
-        return co(function* () {
-            var rendered_files = [];
-            var documents = yield akasha.documentSearch(config, {
-                renderers: [ akasha.HTMLRenderer ]
-            });
+        var rendered_files = [];
+        var documents = await akasha.documentSearch(config, {
+            renderers: [ akasha.HTMLRenderer ]
+        });
 
-            for (let doc of documents) {
-                var fDate = new Date(doc.stat.mtime);
-                var mm = fDate.getMonth() + 1;
-                if (mm < 10) {
-                    mm = "0" + mm.toString();
-                } else {
-                    mm = mm.toString();
-                }
-                var dd = fDate.getDate();
-                if (dd < 10) {
-                    dd = "0" + dd.toString();
-                } else {
-                    dd = dd.toString();
-                }
-
-                var baseURL = url.parse(config.root_url);
-                baseURL.pathname = doc.renderpath;
-
-                rendered_files.push({
-                    loc: baseURL.format(),
-                    priority: 0.5,
-                    lastmod:  fDate.getUTCFullYear() +"-"+ mm +"-"+ dd
-                })
+        for (let doc of documents) {
+            var fDate = new Date(doc.stat.mtime);
+            var mm = fDate.getMonth() + 1;
+            if (mm < 10) {
+                mm = "0" + mm.toString();
+            } else {
+                mm = mm.toString();
+            }
+            var dd = fDate.getDate();
+            if (dd < 10) {
+                dd = "0" + dd.toString();
+            } else {
+                dd = dd.toString();
             }
 
-            smap(rendered_files);
-            yield new Promise((resolve, reject) => {
-                smap(function(xml) {
-                    fs.writeFile(path.join(config.renderDestination, "sitemap.xml"), xml, 'utf8', function (err) {
-                        if (err) {
-                            reject(err);
-                        } else {
-                            resolve();
-                        }
-                    });
+            var baseURL = url.parse(config.root_url);
+            baseURL.pathname = doc.renderpath;
+
+            rendered_files.push({
+                loc: baseURL.format(),
+                priority: 0.5,
+                lastmod:  fDate.getUTCFullYear() +"-"+ mm +"-"+ dd
+            })
+        }
+
+        smap(rendered_files);
+        await new Promise((resolve, reject) => {
+            smap(function(xml) {
+                fs.writeFile(path.join(config.renderDestination, "sitemap.xml"), xml, 'utf8', function (err) {
+                    if (err) {
+                        reject(err);
+                    } else {
+                        resolve();
+                    }
                 });
             });
+        });
 
-            return "okay";
-        })
+        return "okay";
     }
 }
 
@@ -203,21 +200,19 @@ function doLinkRelTag(config, lrtag) {
 
 class LinkRelTagsElement extends mahabhuta.CustomElement {
     get elementName() { return "ak-header-linkreltags"; }
-    process($element, metadata, dirty) {
-        return co(function* () {
-            var ret = "";
-            if (metadata.config.pluginData(pluginName).linkRelTags.length > 0) {
-                for (var lrtag of metadata.config.pluginData(pluginName).linkRelTags) {
-                    ret += yield doLinkRelTag(metadata.config, lrtag);
-                }
+    async process($element, metadata, dirty) {
+        var ret = "";
+        if (metadata.config.pluginData(pluginName).linkRelTags.length > 0) {
+            for (var lrtag of metadata.config.pluginData(pluginName).linkRelTags) {
+                ret += await doLinkRelTag(metadata.config, lrtag);
             }
-            if (metadata.config.pluginData(pluginName).linkRelTags.length > 0) {
-                for (var lrtag of metadata.config.pluginData(pluginName).linkRelTags) {
-                    ret += yield doLinkRelTag(metadata.config, lrtag);
-                }
+        }
+        if (metadata.config.pluginData(pluginName).linkRelTags.length > 0) {
+            for (var lrtag of metadata.config.pluginData(pluginName).linkRelTags) {
+                ret += await doLinkRelTag(metadata.config, lrtag);
             }
-            return ret;
-        });
+        }
+        return ret;
     }
 }
 module.exports.mahabhuta.addMahafunc(new LinkRelTagsElement());
@@ -235,11 +230,11 @@ module.exports.mahabhuta.addMahafunc(new CanonicalURLElement());
 
 module.exports.mahabhuta.addMahafunc(
     function($, metadata, dirty, done) {
-            var elements = [];
-            $('ak-siteverification').each((i, elem) => { elements.push(elem); });
-            if (elements.length <= 0) return done();
-            return done(new Error("ak-siteverification deprecated, use site-verification instead"));
-        });
+        var elements = [];
+        $('ak-siteverification').each((i, elem) => { elements.push(elem); });
+        if (elements.length <= 0) return done();
+        return done(new Error("ak-siteverification deprecated, use site-verification instead"));
+    });
 
 class GoogleAnalyticsElement extends mahabhuta.CustomElement {
     get elementName() { return "ak-google-analytics"; }
@@ -292,20 +287,18 @@ module.exports.mahabhuta.addMahafunc(new AuthorLinkElement());
 
 class OpenGraphImage extends mahabhuta.Munger {
     get selector() { return "html body opengraph-image"; }
-    process($, $link, metadata, dirty) {
-        return co(function* () {
-            const href = $link.attr('href');
-            if ($(`meta[content="${href}"]`).get(0) === undefined) {
-                let txt = yield akasha.partial(metadata.config, 'ak_metatag.html.ejs', {
-                    tagname: 'og:image',
-                    tagcontent: href
-                });
-                if (txt) {
-                    $('head').append(txt);
-                }
+    async process($, $link, metadata, dirty) {
+        const href = $link.attr('href');
+        if ($(`meta[content="${href}"]`).get(0) === undefined) {
+            let txt = await akasha.partial(metadata.config, 'ak_metatag.html.ejs', {
+                tagname: 'og:image',
+                tagcontent: href
+            });
+            if (txt) {
+                $('head').append(txt);
             }
-            $link.remove();
-        });
+        }
+        $link.remove();
     }
 }
 module.exports.mahabhuta.addMahafunc(new OpenGraphImage());
@@ -313,66 +306,64 @@ module.exports.mahabhuta.addMahafunc(new OpenGraphImage());
 class OpenGraphPromoteImages extends mahabhuta.Munger {
     get selector() { return "html head open-graph-promote-images"; }
 
-    process($, $link, metadata, dirty) {
-        return co(function* () {
+    async process($, $link, metadata, dirty) {
 
-            var imgcount = 0;
-            // Look for <img> tags
-            var selector = $link.attr('root')
-                    ? ($link.attr('root') +' img')
-                    : 'img';
-            var imgz = [];
-            $(selector).each(function(i, elem) {
-                if ($(elem).hasClass('opengraph-promote')
-               || !($(elem).hasClass('opengraph-no-promote')))
-                    imgz.push(elem);
-            });
-            // Look for <meta-og-image> tags
-            var selector = $link.attr('root')
-                    ? ($link.attr('root') +' meta-og-image')
-                    : 'meta-og-image';
-            $(selector).each(function(i, elem) { imgz.push(elem); });
-            // console.log(`${metadata.rendered_url} image selector ${selector} - gave ${imgz.length} images`);
-            for (let img of imgz) {
-                let href = $(img).attr('src');
-                // console.log(`${metadata.rendered_url} image ${href}`);
-                if (href.match(/\/img\/extlink.png$/)
-                 || href.match(/\/img\/rss_button.png$/)
-                 || href.match(/\/img\/rss_button.gif$/)) {
-                     // Ignore these images
-                } else {
-                    if (href && href.length > 0) {
-                        let pHref = url.parse(href);
-                        // In case this is a site-relative URL, fix it up
-                        // to have the full URL.
-                        if (! pHref.host) {
-                            if (pHref.path.match(/^\//)) {
-                                href = metadata.config.root_url + href;
-                            } else {
-                                let pRendered = url.parse(metadata.rendered_url);
-                                let dirRender = path.dirname(pRendered.path);
-                                let pRootUrl = url.parse(metadata.config.root_url);
-                                pRootUrl.pathname = dirRender +'/'+ href;
-                                href = url.format(pRootUrl);
-                            }
-                        }
-                    }
-                    if ($(`meta[content="${href}"]`).get(0) === undefined) {
-                        let txt = yield akasha.partial(metadata.config, 'ak_metatag.html.ejs', {
-                            tagname: 'og:image',
-                            tagcontent: href
-                        });
-                        if (txt) {
-                            // console.log(`${metadata.rendered_url} appending image meta ${txt}`);
-                            imgcount++;
-                            $('head').append(txt);
+        var imgcount = 0;
+        // Look for <img> tags
+        var selector = $link.attr('root')
+                ? ($link.attr('root') +' img')
+                : 'img';
+        var imgz = [];
+        $(selector).each(function(i, elem) {
+            if ($(elem).hasClass('opengraph-promote')
+            || !($(elem).hasClass('opengraph-no-promote')))
+                imgz.push(elem);
+        });
+        // Look for <meta-og-image> tags
+        var selector = $link.attr('root')
+                ? ($link.attr('root') +' meta-og-image')
+                : 'meta-og-image';
+        $(selector).each(function(i, elem) { imgz.push(elem); });
+        // console.log(`${metadata.rendered_url} image selector ${selector} - gave ${imgz.length} images`);
+        for (let img of imgz) {
+            let href = $(img).attr('src');
+            // console.log(`${metadata.rendered_url} image ${href}`);
+            if (href.match(/\/img\/extlink.png$/)
+                || href.match(/\/img\/rss_button.png$/)
+                || href.match(/\/img\/rss_button.gif$/)) {
+                    // Ignore these images
+            } else {
+                if (href && href.length > 0) {
+                    let pHref = url.parse(href);
+                    // In case this is a site-relative URL, fix it up
+                    // to have the full URL.
+                    if (! pHref.host) {
+                        if (pHref.path.match(/^\//)) {
+                            href = metadata.config.root_url + href;
+                        } else {
+                            let pRendered = url.parse(metadata.rendered_url);
+                            let dirRender = path.dirname(pRendered.path);
+                            let pRootUrl = url.parse(metadata.config.root_url);
+                            pRootUrl.pathname = dirRender +'/'+ href;
+                            href = url.format(pRootUrl);
                         }
                     }
                 }
+                if ($(`meta[content="${href}"]`).get(0) === undefined) {
+                    let txt = await akasha.partial(metadata.config, 'ak_metatag.html.ejs', {
+                        tagname: 'og:image',
+                        tagcontent: href
+                    });
+                    if (txt) {
+                        // console.log(`${metadata.rendered_url} appending image meta ${txt}`);
+                        imgcount++;
+                        $('head').append(txt);
+                    }
+                }
             }
+        }
 
-            $link.remove();
-        });
+        $link.remove();
     }
 }
 module.exports.mahabhuta.addMahafunc(new OpenGraphPromoteImages());
