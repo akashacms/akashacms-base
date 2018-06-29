@@ -176,7 +176,7 @@ module.exports.mahabhuta.addMahafunc(new PageTitleElement()); /* */
 
 class HeaderMetatagsElement extends mahabhuta.CustomElement {
 	get elementName() { return "ak-header-metatags"; }
-	process($element, metadata, dirty, done) {
+	process($element, metadata, dirty) {
 		return akDoHeaderMeta(metadata);
 	}
 }
@@ -185,17 +185,18 @@ module.exports.mahabhuta.addMahafunc(new HeaderMetatagsElement());
 /* Moved to Mahabhuta */
 class XMLSitemap extends mahabhuta.CustomElement {
     get elementName() { return "ak-sitemapxml"; }
-    process($element, metadata, dirty, done) {
+    process($element, metadata, dirty) {
         return Promise.reject(new Error("ak-sitemapxml deprecated"));
     }
 }
 module.exports.mahabhuta.addMahafunc(new XMLSitemap()); /* */
 
-function doLinkRelTag(config, lrtag) {
-    return akasha.partial(metadata.config, "ak_linkreltag.html.ejs", {
-        relationship: lrtag.relationship,
-        url: lrtag.url
-    });
+async function doLinkRelTag(config, lrtag) {
+    return `<link rel="${lrtag.relationship}" href="${lrtag.url}" />`;
+    // return akasha.partial(metadata.config, "ak_linkreltag.html.ejs", {
+    //     relationship: lrtag.relationship,
+    //     url: lrtag.url
+    // });
 }
 
 class LinkRelTagsElement extends mahabhuta.CustomElement {
@@ -289,7 +290,7 @@ class OpenGraphImage extends mahabhuta.Munger {
     get selector() { return "html body opengraph-image"; }
     async process($, $link, metadata, dirty) {
         const href = $link.attr('href');
-        if ($(`meta[content="${href}"]`).get(0) === undefined) {
+        if (href && $(`meta[content="${href}"]`).get(0) === undefined) {
             let txt = await akasha.partial(metadata.config, 'ak_metatag.html.ejs', {
                 tagname: 'og:image',
                 tagcontent: href
