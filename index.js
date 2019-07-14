@@ -247,15 +247,60 @@ module.exports.mahabhuta.addMahafunc(new GoogleAnalyticsElement());
 
 class PublicationDateElement extends mahabhuta.CustomElement {
     get elementName() { return "publication-date"; }
-    process($element, metadata, dirty, done) {
+    async process($element, metadata, dirty) {
         if (metadata.publicationDate) {
             return akasha.partial(metadata.config, "ak_publdate.html.ejs", {
                 publicationDate: metadata.publicationDate
             });
-        } else return Promise.resolve("");
+        } else return "";
     }
 }
 module.exports.mahabhuta.addMahafunc(new PublicationDateElement());
+
+class TOCGroupElement extends mahabhuta.CustomElement {
+    get elementName() { return "toc-group"; }
+    async process($element, metadata, dirty) {
+        const template = $element.attr('template') 
+                ? $element.attr('template')
+                :  "toc-group-element.html.ejs";
+        const id = $element.attr('id');
+        const additionalClasses = $element.attr('additional-classes');
+
+        return akasha.partial(metadata.config, template, {
+            id, additionalClasses,
+            content: $element.html()
+        });
+    }
+}
+module.exports.mahabhuta.addMahafunc(new TOCGroupElement());
+
+class TOCItemElement extends mahabhuta.CustomElement {
+    get elementName() { return "toc-item"; }
+    async process($element, metadata, dirty) {
+        const template = $element.attr('template') 
+                ? $element.attr('template')
+                :  "toc-item-element.html.ejs";
+        const id = $element.attr('id');
+        const additionalClasses = $element.attr('additional-classes');
+        const title = $element.attr('title');
+		if (!title || title === '') {
+			throw new Error(`toc-item requires an title value`);
+		}
+        const anchor = $element.attr('anchor');
+		if (!anchor || anchor === '') {
+			throw new Error(`toc-item requires an anchor value`);
+		}
+
+        return akasha.partial(metadata.config, template, {
+            id, additionalClasses, title, anchor,
+            content: $element.html()
+        });
+    }
+}
+module.exports.mahabhuta.addMahafunc(new TOCItemElement());
+
+
+
 
 // TODO revamp this
 // TODO this doesn't seem to be used anywhere so I haven't tested it.

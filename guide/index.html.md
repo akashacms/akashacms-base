@@ -75,6 +75,36 @@ The `canonical` link tag defines the most correct official URL for the page.  It
 
 The `<ak-header-canonical-url>` tag generates this tag using the `ak_linkreltag.html.ejs` partial.  
 
+## Generate a Table of Contents for a page
+
+Many websites have a "table of contents" block at the top of a page to help navigate the page.  It's simply a list (possibly nested list) of links to locations within the page.
+
+With `<toc-group>` we generate a container for such a table of contents.  Attributes are:
+
+* `template` for an alternative to the standard template (`ak_toc_group_element.html.ejs`)
+* `id` for the ID of the `toc-group`
+* `additional-classes` for additional class declarations to add to the `class` attribute
+
+This element is expected to contain `<toc-item>` elements that will be the links to locations within the page.  Attributes to this element are:
+
+* `template` for an alternative to the standard template (`ak_toc_group_element.html.ejs`)
+* `id` for the ID of the `toc-group`
+* `additional-classes` for additional class declarations to add to the `class` attribute
+* `title` for the anchor text in the generated link
+* `anchor` for the href to use in the generated link
+
+Any additional markup will be inserted into the generated list item after the link.  The primary use for this will be to have a nested `<toc-group>`.
+
+To implement a "_return to top_" link, simply scatter something like this throughout the page:
+
+```html
+<div style="clear: both">
+    <a href="#ID-FOR-TOC-GROUP">[return to top]</a>
+</div>
+```
+
+The `<toc-group>` must, in this case, have an `id` attribute.  Your link would use that `id` in the `href` as shown here.
+
 ## Show the Publication Date on the page
 
 It's often desirable to show the publication date for a page.  It's often desirable for the page metadata to include the `publicationDate` for a variety of purposes.  For example the `akashacms-blog-podcast` plugin uses the publicationDate to sort content.
