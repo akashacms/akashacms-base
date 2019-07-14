@@ -265,9 +265,10 @@ class TOCGroupElement extends mahabhuta.CustomElement {
                 :  "toc-group-element.html.ejs";
         const id = $element.attr('id');
         const additionalClasses = $element.attr('additional-classes');
+        const suppressContents = $element.attr('suppress-contents');
 
         return akasha.partial(metadata.config, template, {
-            id, additionalClasses,
+            id, additionalClasses, suppressContents,
             content: $element.html()
         });
     }
