@@ -262,7 +262,7 @@ class TOCGroupElement extends mahabhuta.CustomElement {
     async process($element, metadata, dirty) {
         const template = $element.attr('template') 
                 ? $element.attr('template')
-                :  "toc-group-element.html.ejs";
+                :  "ak_toc_group_element.html.ejs";
         const id = $element.attr('id');
         const additionalClasses = $element.attr('additional-classes');
         const suppressContents = $element.attr('suppress-contents');
@@ -280,7 +280,7 @@ class TOCItemElement extends mahabhuta.CustomElement {
     async process($element, metadata, dirty) {
         const template = $element.attr('template') 
                 ? $element.attr('template')
-                :  "toc-item-element.html.ejs";
+                :  "ak_toc_item_element.html.ejs";
         const id = $element.attr('id');
         const additionalClasses = $element.attr('additional-classes');
         const title = $element.attr('title');
