@@ -264,7 +264,9 @@ class TOCGroupElement extends mahabhuta.CustomElement {
                 ? $element.attr('template')
                 :  "ak_toc_group_element.html.ejs";
         const id = $element.attr('id');
-        const additionalClasses = $element.attr('additional-classes');
+        const additionalClasses = $element.attr('additional-classes')
+                ? $element.attr('additional-classes')
+                : "";
         const suppressContents = $element.attr('suppress-contents');
 
         return akasha.partial(metadata.config, template, {
@@ -282,7 +284,9 @@ class TOCItemElement extends mahabhuta.CustomElement {
                 ? $element.attr('template')
                 :  "ak_toc_item_element.html.ejs";
         const id = $element.attr('id');
-        const additionalClasses = $element.attr('additional-classes');
+        const additionalClasses = $element.attr('additional-classes')
+                ? $element.attr('additional-classes')
+                : "";
         const title = $element.attr('title');
 		if (!title || title === '') {
 			throw new Error(`toc-item requires an title value`);
