@@ -1,4 +1,4 @@
-<li id="<%= id %>" class="<%= optionalclasses %>">
+<li <% if (typeof id !== 'undefined') { %>id="<%= id %>" <% } %> class="<%= optionalclasses %>">
     <a href="<%= anchor %>"><%= title %></a>
     <%- content %>
 </li>
