@@ -268,10 +268,13 @@ class TOCGroupElement extends mahabhuta.CustomElement {
                 ? $element.attr('additional-classes')
                 : "";
         const suppressContents = $element.attr('suppress-contents');
+        const content = $element.html()
+                ? $element.html()
+                : "";
 
         return akasha.partial(metadata.config, template, {
             id, additionalClasses, suppressContents,
-            content: $element.html()
+            content
         });
     }
 }
@@ -295,10 +298,13 @@ class TOCItemElement extends mahabhuta.CustomElement {
 		if (!anchor || anchor === '') {
 			throw new Error(`toc-item requires an anchor value`);
 		}
+        const content = $element.html()
+                ? $element.html()
+                : "";
 
         return akasha.partial(metadata.config, template, {
             id, additionalClasses, title, anchor,
-            content: $element.html()
+            content
         });
     }
 }
