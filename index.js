@@ -1,6 +1,6 @@
 /**
  *
- * Copyright 2014-2017 David Herron
+ * Copyright 2014-2019 David Herron
  *
  * This file is part of AkashaCMS (http://akashacms.com/).
  *
@@ -17,40 +17,46 @@
  *  limitations under the License.
  */
 
-'use strict';
-
 const fs    = require('fs');
 const path  = require('path');
 const util  = require('util');
 const url   = require('url');
 const akasha = require('akasharender');
 const mahabhuta = akasha.mahabhuta;
-const smap       = require('sightmap');
-
-const log   = require('debug')('akasha:base-plugin');
-const error = require('debug')('akasha:error-base-plugin');
+const smap  = require('sightmap');
 
 const pluginName = "akashacms-base";
+
+const _plugin_config = Symbol('config');
+const _plugin_options = Symbol('options');
 
 module.exports = class BasePlugin extends akasha.Plugin {
     constructor() {
         super(pluginName);
     }
 
-    configure(config) {
+    configure(config, options) {
+        this[_plugin_config] = config;
+        this[_plugin_options] = options;
+        options.config = config;
         config.addPartialsDir(path.join(__dirname, 'partials'));
         config.addLayoutsDir(path.join(__dirname, 'layout'));
         config.addAssetsDir(path.join(__dirname, 'assets'));
-        config.addMahabhuta(module.exports.mahabhuta);
-        config.pluginData(pluginName).linkRelTags = [];
+        config.addMahabhuta(module.exports.mahabhutaArray(options));
+        this[_plugin_options].linkRelTags = [];
     }
 
+    get config() { return this[_plugin_config]; }
+    get options() { return this[_plugin_options]; }
+
     doHeaderMetaSync(config, metadata) {
-        return akasha.partialSync(config, "ak_headermeta.html.ejs", fixHeaderMeta(metadata));
+        return akasha.partialSync(config,
+            "ak_headermeta.html.ejs",
+            fixHeaderMeta(metadata));
     }
 
     addLinkRelTag(config, lrTag) {
-        config.pluginData(pluginName).linkRelTags.push(lrTag);
+        this.options.linkRelTags.push(lrTag);
         return this;
     }
 
@@ -67,12 +73,12 @@ module.exports = class BasePlugin extends akasha.Plugin {
     }
 
     generateSitemap(config, doit) {
-        config.pluginData(pluginName).generateSitemapFlag = doit;
+        this.options.generateSitemapFlag = doit;
         return this;
     }
 
     async onSiteRendered(config) {
-        if (!config.pluginData(pluginName).generateSitemapFlag) {
+        if (!this.options.generateSitemapFlag) {
             return Promise.resolve("skipped");
         }
         var rendered_files = [];
@@ -122,65 +128,74 @@ module.exports = class BasePlugin extends akasha.Plugin {
     }
 }
 
-module.exports.mahabhuta = new mahabhuta.MahafuncArray("akashacms-base", {});
+module.exports.mahabhutaArray = function(options) {
+    let ret = new mahabhuta.MahafuncArray(pluginName, options);
+    ret.addMahafunc(new HeaderMetatagsElement());
+    ret.addMahafunc(new XMLSitemap());
+    ret.addMahafunc(new LinkRelTagsElement());
+    ret.addMahafunc(new CanonicalURLElement());
+    ret.addMahafunc(
+        function($, metadata, dirty, done) {
+            var elements = [];
+            $('ak-siteverification').each((i, elem) => { elements.push(elem); });
+            if (elements.length <= 0) return done();
+            return done(new Error("ak-siteverification deprecated, use site-verification instead"));
+        });
+    ret.addMahafunc(new GoogleAnalyticsElement());
+    ret.addMahafunc(new PublicationDateElement());
+    ret.addMahafunc(new TOCGroupElement());
+    ret.addMahafunc(new TOCItemElement());
+    ret.addMahafunc(new AuthorLinkElement());
+    ret.addMahafunc(new OpenGraphImage());
+    ret.addMahafunc(new OpenGraphPromoteImages());
+    return ret;
+};
 
 var fixHeaderMeta = function(metadata) {
-	var data = {};
-	for (var prop in metadata) {
-		if (!(prop in data)) data[prop] = metadata[prop];
-	}
-	if (typeof data.metaOGtitle === "undefined") {
-		if (typeof data.pagetitle !== "undefined") {
-				data.metaOGtitle = data.pagetitle;
-		} else if (typeof data.title !== "undefined") {
-				data.metaOGtitle = data.title;
-		}
-	}
-	if (typeof data.metaOGdescription === "undefined") {
-		if (typeof data.metadescription !== "undefined") {
-				data.metaOGdescription = data.metadescription;
-		}
-	}
-	if (typeof data.metaDCtitle === "undefined") {
-		if (typeof data.pagetitle !== "undefined") {
-				data.metaDCtitle = arg.pagetitle;
-		} else if (typeof data.title !== "undefined") {
-				data.metaDCtitle = data.title;
-		}
-	}
-	if (typeof data.metapagename === "undefined") {
-		if (typeof data.pagetitle !== "undefined") {
-				data.metapagename = arg.pagetitle;
-		} else if (typeof data.title !== "undefined") {
-				data.metapagename = data.title;
-		}
-	}
-	if (typeof data.metadate === "undefined") {
-		data.metadate = data.rendered_date;
-	}
-	return data;
+    var data = {};
+    for (var prop in metadata) {
+        if (!(prop in data)) data[prop] = metadata[prop];
+    }
+    if (typeof data.metaOGtitle === "undefined") {
+        if (typeof data.pagetitle !== "undefined") {
+                data.metaOGtitle = data.pagetitle;
+        } else if (typeof data.title !== "undefined") {
+                data.metaOGtitle = data.title;
+        }
+    }
+    if (typeof data.metaOGdescription === "undefined") {
+        if (typeof data.metadescription !== "undefined") {
+                data.metaOGdescription = data.metadescription;
+        }
+    }
+    if (typeof data.metaDCtitle === "undefined") {
+        if (typeof data.pagetitle !== "undefined") {
+                data.metaDCtitle = arg.pagetitle;
+        } else if (typeof data.title !== "undefined") {
+                data.metaDCtitle = data.title;
+        }
+    }
+    if (typeof data.metapagename === "undefined") {
+        if (typeof data.pagetitle !== "undefined") {
+                data.metapagename = arg.pagetitle;
+        } else if (typeof data.title !== "undefined") {
+                data.metapagename = data.title;
+        }
+    }
+    if (typeof data.metadate === "undefined") {
+        data.metadate = data.rendered_date;
+    }
+    return data;
 };
-
-var akDoHeaderMeta = function(metadata) {
-	return akasha.partial(metadata.config, "ak_headermeta.html.ejs", fixHeaderMeta(metadata));
-};
-
-/* TOO SILLY */
-class PageTitleElement extends mahabhuta.CustomElement {
-	get elementName() { return "ak-page-title"; }
-	process($element, metadata, dirty) {
-        return Promise.reject(new Error("ak-page-title deprecated"));
-	}
-}
-module.exports.mahabhuta.addMahafunc(new PageTitleElement()); /* */
 
 class HeaderMetatagsElement extends mahabhuta.CustomElement {
-	get elementName() { return "ak-header-metatags"; }
-	process($element, metadata, dirty) {
-		return akDoHeaderMeta(metadata);
-	}
+    get elementName() { return "ak-header-metatags"; }
+    process($element, metadata, dirty) {
+        return akasha.partial(this.array.options.config,
+                "ak_headermeta.html.ejs",
+                fixHeaderMeta(metadata));
+    }
 }
-module.exports.mahabhuta.addMahafunc(new HeaderMetatagsElement());
 
 /* Moved to Mahabhuta */
 class XMLSitemap extends mahabhuta.CustomElement {
@@ -189,11 +204,10 @@ class XMLSitemap extends mahabhuta.CustomElement {
         return Promise.reject(new Error("ak-sitemapxml deprecated"));
     }
 }
-module.exports.mahabhuta.addMahafunc(new XMLSitemap()); /* */
 
-async function doLinkRelTag(config, lrtag) {
+function doLinkRelTag(config, lrtag) {
     return `<link rel="${lrtag.relationship}" href="${lrtag.url}" />`;
-    // return akasha.partial(metadata.config, "ak_linkreltag.html.ejs", {
+    // return akasha.partial(this.array.options.config, "ak_linkreltag.html.ejs", {
     //     relationship: lrtag.relationship,
     //     url: lrtag.url
     // });
@@ -201,41 +215,31 @@ async function doLinkRelTag(config, lrtag) {
 
 class LinkRelTagsElement extends mahabhuta.CustomElement {
     get elementName() { return "ak-header-linkreltags"; }
-    async process($element, metadata, dirty) {
+    process($element, metadata, dirty) {
         var ret = "";
-        if (metadata.config.pluginData(pluginName).linkRelTags.length > 0) {
-            for (var lrtag of metadata.config.pluginData(pluginName).linkRelTags) {
-                ret += await doLinkRelTag(metadata.config, lrtag);
+        if (this.array.options.linkRelTags.length > 0) {
+            for (var lrtag of this.array.options.linkRelTags) {
+                ret += doLinkRelTag(this.array.options.config, lrtag);
             }
         }
-        if (metadata.config.pluginData(pluginName).linkRelTags.length > 0) {
-            for (var lrtag of metadata.config.pluginData(pluginName).linkRelTags) {
-                ret += await doLinkRelTag(metadata.config, lrtag);
+        if (this.array.options.linkRelTags.length > 0) {
+            for (var lrtag of this.array.options.linkRelTags) {
+                ret += doLinkRelTag(this.array.options.config, lrtag);
             }
         }
         return ret;
     }
 }
-module.exports.mahabhuta.addMahafunc(new LinkRelTagsElement());
 
 class CanonicalURLElement extends mahabhuta.CustomElement {
     get elementName() { return "ak-header-canonical-url"; }
     process($element, metadata, dirty) {
-        return doLinkRelTag(metadata.config, {
+        return doLinkRelTag(this.array.options.config, {
             relationship: "canonical",
             url: metadata.rendered_url
         });
     }
 }
-module.exports.mahabhuta.addMahafunc(new CanonicalURLElement());
-
-module.exports.mahabhuta.addMahafunc(
-    function($, metadata, dirty, done) {
-        var elements = [];
-        $('ak-siteverification').each((i, elem) => { elements.push(elem); });
-        if (elements.length <= 0) return done();
-        return done(new Error("ak-siteverification deprecated, use site-verification instead"));
-    });
 
 class GoogleAnalyticsElement extends mahabhuta.CustomElement {
     get elementName() { return "ak-google-analytics"; }
@@ -243,19 +247,17 @@ class GoogleAnalyticsElement extends mahabhuta.CustomElement {
         return Promise.reject("ak-google-analytics deprecated")
     }
 }
-module.exports.mahabhuta.addMahafunc(new GoogleAnalyticsElement());
 
 class PublicationDateElement extends mahabhuta.CustomElement {
     get elementName() { return "publication-date"; }
     async process($element, metadata, dirty) {
         if (metadata.publicationDate) {
-            return akasha.partial(metadata.config, "ak_publdate.html.ejs", {
+            return akasha.partial(this.array.options.config, "ak_publdate.html.ejs", {
                 publicationDate: metadata.publicationDate
             });
         } else return "";
     }
 }
-module.exports.mahabhuta.addMahafunc(new PublicationDateElement());
 
 class TOCGroupElement extends mahabhuta.CustomElement {
     get elementName() { return "toc-group"; }
@@ -272,13 +274,12 @@ class TOCGroupElement extends mahabhuta.CustomElement {
                 ? $element.html()
                 : "";
 
-        return akasha.partial(metadata.config, template, {
+        return akasha.partial(this.array.options.config, template, {
             id, additionalClasses, suppressContents,
             content
         });
     }
 }
-module.exports.mahabhuta.addMahafunc(new TOCGroupElement());
 
 class TOCItemElement extends mahabhuta.CustomElement {
     get elementName() { return "toc-item"; }
@@ -291,24 +292,23 @@ class TOCItemElement extends mahabhuta.CustomElement {
                 ? $element.attr('additional-classes')
                 : "";
         const title = $element.attr('title');
-		if (!title || title === '') {
-			throw new Error(`toc-item requires an title value`);
-		}
+        if (!title || title === '') {
+            throw new Error(`toc-item requires an title value`);
+        }
         const anchor = $element.attr('anchor');
-		if (!anchor || anchor === '') {
-			throw new Error(`toc-item requires an anchor value`);
-		}
+        if (!anchor || anchor === '') {
+            throw new Error(`toc-item requires an anchor value`);
+        }
         const content = $element.html()
                 ? $element.html()
                 : "";
 
-        return akasha.partial(metadata.config, template, {
+        return akasha.partial(this.array.options.config, template, {
             id, additionalClasses, title, anchor,
             content
         });
     }
 }
-module.exports.mahabhuta.addMahafunc(new TOCItemElement());
 
 
 
@@ -319,18 +319,18 @@ class AuthorLinkElement extends mahabhuta.CustomElement {
     get elementName() { return "author-link"; }
     process($element, metadata, dirty, done) {
         throw new Error("author-link disabled");
-        /* if (typeof metadata.config.authorship === 'undefined') {
+        /* if (typeof this.array.options.config.authorship === 'undefined') {
             return Promise.resolve("");
         }
         var author;
-        for (var i in metadata.config.authorship.authors) {
-            if (metadata.config.authorship.authors[i].name === auname) {
-                author = metadata.config.authorship.authors[i];
+        for (var i in this.array.options.config.authorship.authors) {
+            if (this.array.options.config.authorship.authors[i].name === auname) {
+                author = this.array.options.config.authorship.authors[i];
                 break;
             }
         }
         if (author) {
-            return akasha.partial(metadata.config, "ak_authorship.html.ejs", {
+            return akasha.partial(this.array.options.config, "ak_authorship.html.ejs", {
                 fullname: author.fullname,
                 authorship: author.authorship
             });
@@ -340,14 +340,13 @@ class AuthorLinkElement extends mahabhuta.CustomElement {
         } */
     }
 }
-module.exports.mahabhuta.addMahafunc(new AuthorLinkElement());
 
 class OpenGraphImage extends mahabhuta.Munger {
     get selector() { return "html body opengraph-image"; }
     async process($, $link, metadata, dirty) {
         const href = $link.attr('href');
         if (href && $(`meta[content="${href}"]`).get(0) === undefined) {
-            let txt = await akasha.partial(metadata.config, 'ak_metatag.html.ejs', {
+            let txt = await akasha.partial(this.array.options.config, 'ak_metatag.html.ejs', {
                 tagname: 'og:image',
                 tagcontent: href
             });
@@ -358,7 +357,6 @@ class OpenGraphImage extends mahabhuta.Munger {
         $link.remove();
     }
 }
-module.exports.mahabhuta.addMahafunc(new OpenGraphImage());
 
 class OpenGraphPromoteImages extends mahabhuta.Munger {
     get selector() { return "html head open-graph-promote-images"; }
@@ -396,18 +394,18 @@ class OpenGraphPromoteImages extends mahabhuta.Munger {
                     // to have the full URL.
                     if (! pHref.host) {
                         if (pHref.path.match(/^\//)) {
-                            href = metadata.config.root_url + href;
+                            href = this.array.options.config.root_url + href;
                         } else {
                             let pRendered = url.parse(metadata.rendered_url);
                             let dirRender = path.dirname(pRendered.path);
-                            let pRootUrl = url.parse(metadata.config.root_url);
+                            let pRootUrl = url.parse(this.array.options.config.root_url);
                             pRootUrl.pathname = dirRender +'/'+ href;
                             href = url.format(pRootUrl);
                         }
                     }
                 }
                 if ($(`meta[content="${href}"]`).get(0) === undefined) {
-                    let txt = await akasha.partial(metadata.config, 'ak_metatag.html.ejs', {
+                    let txt = await akasha.partial(this.array.options.config, 'ak_metatag.html.ejs', {
                         tagname: 'og:image',
                         tagcontent: href
                     });
@@ -423,96 +421,3 @@ class OpenGraphPromoteImages extends mahabhuta.Munger {
         $link.remove();
     }
 }
-module.exports.mahabhuta.addMahafunc(new OpenGraphPromoteImages());
-
-/* This is now in akashacms-external-links
- *
-module.exports.mahabhuta.addMahafunc(
-		function($, metadata, dirty, done) {
-
-            var links = [];
-            $('html body a').each((i, elem) => { links.push(elem); });
-			if (links.length <= 0) return done();
-        	log('a modifications');
-            async.eachSeries(links,
-            (link, next) => {
-                setImmediate(function() {
-            	var href   = $(link).attr('href');
-
-            	// The potential exists to manipulate links to local documents
-            	// Such as what's done with the linkto tag above.
-            	// Such as checking for valid links
-            	// Also need to consider links to //hostname/path/to/object
-            	// Potential for complete link checking service right here
-
-            	if (href && href !== '#') {
-					var uHref = url.parse(href, true, true);
-
-					if (uHref.protocol || uHref.slashes) {
-						// It's a link to somewhere else
-						// look at domain in whitelist and blacklist
-
-						var donofollow = false;
-
-						if (metadata.config.nofollow && metadata.config.nofollow.blacklist) {
-							metadata.config.nofollow.blacklist.forEach(function(re) {
-								if (uHref.hostname.match(re)) {
-									donofollow = true;
-								}
-							});
-						}
-						if (metadata.config.nofollow && metadata.config.nofollow.whitelist) {
-							metadata.config.nofollow.whitelist.forEach(function(re) {
-								if (uHref.hostname.match(re)) {
-									donofollow = false;
-								}
-							});
-						}
-
-						if (donofollow && !$(link).attr('rel')) {
-							$(link).attr('rel', 'nofollow');
-						}
-
-						/* TODO
-						if (! metadata.config.builtin.suppress.extlink
-						 && $(link).find("img.ak-extlink-icon").length <= 0) {
-							$(link).append('<img class="ak-extlink-icon" src="/img/extlink.png"/>');
-						} * /
-
-						next();
-					} else {
-						// This is where we would handle local links
-						if (! href.match(/^\//)) {
-						    var hreforig = href;
-						    var pRenderedUrl = url.parse(metadata.rendered_url);
-						    var docpath = pRenderedUrl.pathname;
-						    var docdir = path.dirname(docpath);
-							href = path.join(docdir, href);
-							// util.log('***** FIXED href '+ hreforig +' to '+ href);
-						}
-						/* TODO
-            			var docEntry = akasha.findDocumentForUrlpath(href);
-            			if (docEntry) {
-            				// Automatically add a title= attribute
-            				if (!$(link).attr('title') && docEntry.frontmatter.yaml.title) {
-            					$(link).attr('title', docEntry.frontmatter.yaml.title);
-            				}
-            				// For local links that don't have text or interior nodes,
-            				// supply text from the title of the target of the link.
-            				var linktext = $(link).text();
-            				if ((!linktext || linktext.length <= 0 || linktext === href)
-            				 && $(link).children() <= 0
-            				 && docEntry.frontmatter.yaml.title) {
-            					$(link).text(docEntry.frontmatter.yaml.title);
-            				}
-            			} * /
-            			next();
-					}
-				} else next();
-                });
-            },
-            err => {
-				if (err) done(err);
-				else done();
-        	});
-        }); */
