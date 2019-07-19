@@ -26,9 +26,9 @@
     "type": "git",
     "url": "git://github.com/akashacms/akashacms-base.git"
   },
-  "version": "0.6.8",
+  "version": "0.7.0",
   "engines": {
-    "node": ">=8.4"
+    "node": ">=12.2"
   },
   "dependencies": {
     "sightmap": "*"
