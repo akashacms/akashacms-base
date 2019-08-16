@@ -43,7 +43,7 @@ module.exports = class BasePlugin extends akasha.Plugin {
         config.addLayoutsDir(path.join(__dirname, 'layout'));
         config.addAssetsDir(path.join(__dirname, 'assets'));
         config.addMahabhuta(module.exports.mahabhutaArray(options));
-        this[_plugin_options].linkRelTags = [];
+        if (!options.linkRelTags) this[_plugin_options].linkRelTags = [];
     }
 
     get config() { return this[_plugin_config]; }
@@ -217,16 +217,19 @@ class LinkRelTagsElement extends mahabhuta.CustomElement {
     get elementName() { return "ak-header-linkreltags"; }
     process($element, metadata, dirty) {
         var ret = "";
+        // console.log(`ak-header-linkreltags `, this.array.options);
         if (this.array.options.linkRelTags.length > 0) {
             for (var lrtag of this.array.options.linkRelTags) {
                 ret += doLinkRelTag(this.array.options.config, lrtag);
             }
         }
-        if (this.array.options.linkRelTags.length > 0) {
+        // Why was this here a 2nd time?
+        /* if (this.array.options.linkRelTags.length > 0) {
             for (var lrtag of this.array.options.linkRelTags) {
                 ret += doLinkRelTag(this.array.options.config, lrtag);
             }
-        }
+        } */
+        // console.log(`ak-header-linkreltags `, ret);
         return ret;
     }
 }

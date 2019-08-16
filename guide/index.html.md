@@ -40,13 +40,13 @@ Once added to `package.json` run: `npm install`
 
 In `config.js` for the website:
 
+```js
+config.use(require('akashacms-base'), {
+    generateSitemapFlag: true
+});
 ```
-config.use(require('akashacms-base'));
 
-config.plugin("akashacms-base").generateSitemap(config, true);
-```
-
-The latter causes an XML Sitemap to be generated in the file `/sitemap.xml`. See the XML Sitemaps section below.
+The `generateSitemapFlag` flag causes an XML Sitemap to be generated in the file `/sitemap.xml`. See the XML Sitemaps section below.
 
 <h1 id="custom-tags">Custom tags</h1>
 
