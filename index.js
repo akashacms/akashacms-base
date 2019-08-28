@@ -147,7 +147,6 @@ module.exports.mahabhutaArray = function(options) {
     ret.addMahafunc(new TOCItemElement());
     ret.addMahafunc(new AuthorLinkElement());
     ret.addMahafunc(new OpenGraphPromoteImages());
-    ret.addMahafunc(new img2figureImage());
     return ret;
 };
 
@@ -344,7 +343,7 @@ class AuthorLinkElement extends mahabhuta.CustomElement {
     }
 }
 
-
+/*
 class img2figureImage extends mahabhuta.CustomElement {
     get elementName() { return 'html body img[figure]'; }
     async process($element, metadata, dirty, done) {
@@ -370,6 +369,7 @@ class img2figureImage extends mahabhuta.CustomElement {
         });
     }
 }
+*/
 
 class OpenGraphPromoteImages extends mahabhuta.Munger {
     get selector() { return "html head open-graph-promote-images"; }

@@ -200,22 +200,9 @@ describe('image to figure/image', function() {
         assert.exists(html, 'result exists');
         assert.isString(html, 'result isString');
 
-        assert.equal($('body figure#change1').length, 1);
-        assert.equal($('body figure#change1 img[src="img/Human-Skeleton.jpg"]').length, 1);
-
-        assert.equal($('body figure.some-class').length, 1);
-        assert.equal($('body figure.some-class img[src="img/Human-Skeleton.jpg"]').length, 1);
-
-        assert.equal($('body figure#change-caption').length, 1);
-        assert.equal($('body figure#change-caption img[src="img/Human-Skeleton.jpg"]').length, 1);
-        assert.equal($('body figure#change-caption figcaption').length, 1);
-        assert.include($('body figure#change-caption figcaption').html(), 
-            "This is a caption");
-
-        assert.equal($('body figure#change-dest').length, 1);
-        assert.equal($('body figure#change-dest a[href="https://somewhere.else"]').length, 1);
-        assert.equal($('body figure#change-dest a[href="https://somewhere.else"] img[src="img/Human-Skeleton.jpg"]').length, 1);
-
+        // The primary testing for img2figimg is in akasharender
+        // However this piece of testing must happen here.
+        
         assert.equal($('head meta[name="og:image"]').length, 1);
         assert.include($('head meta[name="og:image"]').attr('content'), 
             "https://example.akashacms.com/img/Human-Skeleton.jpg");
