@@ -15,6 +15,7 @@ The `akashacms-base` plugin provides foundation-level support for building websi
     <toc-item id="canonical-url" title="Generate a canonical URL in header"></toc-item>
     <toc-item id="mktoc" title="Generate a Table of Contents for a page"></toc-item>
     <toc-item id="publdate" title="Show the Publication Date on the page"></toc-item>
+    <toc-item id="img2figimg" title="Create figure/img constructs from images"></toc-item>
     <toc-item id="opengraph" title="Promote images with OpenGraph tags"></toc-item>
     <toc-item id="opengraph-single" title="Promoting a single image for OpenGraph"></toc-item>
     </toc-group>
@@ -129,6 +130,29 @@ It's often desirable to show the publication date for a page.  It's often desira
 The page can include `publicationDate` in its metadata.  If missing, AkashaRender substitutes in the last modification date of the content file.
 
 The tag `<publication-date>` formats that date through the `ak_publdate.html.ejs` partial.
+
+<h2 id="img2figimg">Create figure/img constructs from images</h2>
+
+We have a tag `<fig-img>` to aid constructing the combination of a `<figure>` containing an `<img>`.  But after some time of using that tag it seems better to use the `<img>` tag, and add attributes to control the construction of the figure/img construct.
+
+To trigger this behavior include the `figure` property on the image.
+
+```html
+<img id="change1" figure src="img/Human-Skeleton.jpg">
+```
+
+With the `figure` property, we replace the `<img>` with a `<figure>` containing an `<img>`.
+
+The recognized attributes are:
+
+* `id` becomes the `id` of the `<figure>`
+* `class` becomes the `class` of the `<figure>`
+* `width` becomes the `width` of the `<figure>`
+* `style` becomes the `style` of the `<figure>`
+* `dest` becomes an `<a>` tag surrounding the `<img>` within the `<figure>`
+* `caption` becomes a `<figcaption>` tag within the `<figure>`
+
+This is processed through the `ak_figimg.html.ejs` template just as for `<fig-img>`.
 
 <h2 id="opengraph">Promote images with OpenGraph tags</h2>
 
