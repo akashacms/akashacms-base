@@ -26,15 +26,12 @@
     "type": "git",
     "url": "git://github.com/akashacms/akashacms-base.git"
   },
-  "version": "0.7.1",
+  "version": "0.7.2",
   "engines": {
     "node": ">=12.2"
   },
   "scripts": {
-      "dopublish": "npm publish --access public",
-      "test-setup": "cd test && npm run setup",
-      "test": "cd test && npm test",
-      "clean": "cd test && npm run clean"
+      "dopublish": "npm publish --access public"
   },
   "dependencies": {
     "sightmap": "*"

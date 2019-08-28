@@ -11,3 +11,7 @@ Do this one twice to see what happens
 
 <opengraph-image href="http://some.where"></opengraph-image>
 
+
+<opengraph-image href="img/foo-bar.jpg"></opengraph-image>
+
+<opengraph-image href="/full/path/img/foo-bar.jpg"></opengraph-image>

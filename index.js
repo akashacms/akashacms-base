@@ -146,8 +146,8 @@ module.exports.mahabhutaArray = function(options) {
     ret.addMahafunc(new TOCGroupElement());
     ret.addMahafunc(new TOCItemElement());
     ret.addMahafunc(new AuthorLinkElement());
-    ret.addMahafunc(new OpenGraphImage());
     ret.addMahafunc(new OpenGraphPromoteImages());
+    ret.addMahafunc(new img2figureImage());
     return ret;
 };
 
@@ -344,20 +344,30 @@ class AuthorLinkElement extends mahabhuta.CustomElement {
     }
 }
 
-class OpenGraphImage extends mahabhuta.Munger {
-    get selector() { return "html body opengraph-image"; }
-    async process($, $link, metadata, dirty) {
-        const href = $link.attr('href');
-        if (href && $(`meta[content="${href}"]`).get(0) === undefined) {
-            let txt = await akasha.partial(this.array.options.config, 'ak_metatag.html.ejs', {
-                tagname: 'og:image',
-                tagcontent: href
-            });
-            if (txt) {
-                $('head').append(txt);
-            }
-        }
-        $link.remove();
+
+class img2figureImage extends mahabhuta.CustomElement {
+    get elementName() { return 'html body img[figure]'; }
+    async process($element, metadata, dirty, done) {
+        // console.log($element);
+        const template = $element.attr('template') 
+                ? $element.attr('template')
+                :  "ak_figimg.html.ejs";
+        const id = $element.attr('id');
+        const clazz = $element.attr('class');
+        const style = $element.attr('style');
+        const width = $element.attr('width');
+        const src = $element.attr('src');
+        const dest    = $element.attr('dest');
+        const content = $element.attr('caption')
+                ? $element.attr('caption')
+                : "";
+        
+        dirty();
+
+        return akasha.partial(this.array.options.config, template, {
+            id, clazz, style, width, href: src, dest,
+            caption: content
+        });
     }
 }
 
@@ -375,16 +385,23 @@ class OpenGraphPromoteImages extends mahabhuta.Munger {
         $(selector).each(function(i, elem) {
             if ($(elem).hasClass('opengraph-promote')
             || !($(elem).hasClass('opengraph-no-promote')))
-                imgz.push(elem);
+                imgz.push($(elem).attr('src'));
         });
         // Look for <meta-og-image> tags
         var selector = $link.attr('root')
                 ? ($link.attr('root') +' meta-og-image')
                 : 'meta-og-image';
-        $(selector).each(function(i, elem) { imgz.push(elem); });
+        $(selector).each(function(i, elem) { imgz.push($(elem).attr('src')); });
+        var selector = $link.attr('root')
+                ? ($link.attr('root') +' opengraph-image')
+                : 'opengraph-image';
+        $(selector).each(function(i, elem) { 
+            imgz.push($(elem).attr('href')); 
+            $(elem).remove();
+        });
         // console.log(`${metadata.rendered_url} image selector ${selector} - gave ${imgz.length} images`);
-        for (let img of imgz) {
-            let href = $(img).attr('src');
+        for (let href of imgz) {
+            // let href = $(img).attr('src');
             // console.log(`${metadata.rendered_url} image ${href}`);
             if (href.match(/\/img\/extlink.png$/)
                 || href.match(/\/img\/rss_button.png$/)
@@ -402,7 +419,10 @@ class OpenGraphPromoteImages extends mahabhuta.Munger {
                             let pRendered = url.parse(metadata.rendered_url);
                             let dirRender = path.dirname(pRendered.path);
                             let pRootUrl = url.parse(this.array.options.config.root_url);
-                            pRootUrl.pathname = dirRender +'/'+ href;
+                            pRootUrl.pathname = dirRender !== "/"
+                                            ? dirRender +'/'+ href
+                                            : href;
+                            // console.log(pRootUrl);
                             href = url.format(pRootUrl);
                         }
                     }
