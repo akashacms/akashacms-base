@@ -441,6 +441,22 @@ class OpenGraphPromoteImages extends mahabhuta.Munger {
             }
         }
 
-        $link.remove();
+        // It's been observed that this Mahafunc can be called 
+        // before all partial's have been processed.  An image that's
+        // pulled in by a partial would be missed, therefore.  
+        // 
+        // In the test suite we attempted to replicate the behavior that
+        // was seen, but was unable to replicate. 
+        //
+        // The issue showed up for pages on greentransportation.info. 
+        //
+        // No images were being promoted.  The image of interest was handled
+        // by the heropicture.html.ejs partial.  At the time this Mahafunc was
+        // called that partial had not been processed yet, for some reason. 
+        //
+        // To see this add console.log($.html()) to the top to see the HTML
+        // being processed by this Mahafunc.
+        
+        if (imgcount > 0) $link.remove();
     }
 }

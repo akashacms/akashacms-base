@@ -15,6 +15,7 @@ const config = new akasha.Configuration();
 config.rootURL("https://example.akashacms.com");
 config.configDir = __dirname;
 config.addLayoutsDir('layouts')
+      .addPartialsDir('partials')
       .addDocumentsDir('documents');
 config.use(plugin, baseConfig);
 config.setMahabhutaConfig({
@@ -202,7 +203,7 @@ describe('image to figure/image', function() {
 
         // The primary testing for img2figimg is in akasharender
         // However this piece of testing must happen here.
-        
+
         assert.equal($('head meta[name="og:image"]').length, 1);
         assert.include($('head meta[name="og:image"]').attr('content'), 
             "https://example.akashacms.com/img/Human-Skeleton.jpg");
@@ -248,12 +249,18 @@ describe('opengraph promote images', function() {
         assert.exists(html, 'result exists');
         assert.isString(html, 'result isString');
 
-        assert.equal($('head meta[name="og:image"]').length, 2);
+        assert.equal($('head meta[name="og:image"]').length, 4);
         assert.equal($('head meta[content="http://foo.bar/this-should-be-promoted-default-action.jpg"]').length, 1);
         assert.equal($('head meta[content="http://foo.bar/should-be-promoted-class.jpg"]').length, 1);
         assert.equal($('head meta[content="http://foo.bar/should-not-be-promoted-class.jpg"]').length, 0);
         assert.equal($('head meta[content="http://foo.bar/img/extlink.png"]').length, 0);
         assert.equal($('head meta[content="http://foo.bar/img/rss_button.png"]').length, 0);
         assert.equal($('head meta[content="http://foo.bar/img/rss_button.gif"]').length, 0);
+        assert.equal($('head meta[content="https://example.akashacms.com/img-from-partial.jpg"]').length, 1);
+        assert.equal($('body partial').length, 0);
+        assert.equal($('body partial[file-name="img.html"]').length, 0);
+        assert.equal($('body img#img-from-partial').length, 1);
+        assert.equal($('head meta[content="https://example.akashacms.com/img-from-partial-ejs.jpg"]').length, 1);
+        assert.equal($('body img#img-from-partial-ejs').length, 1);
     });
 });
