@@ -26,16 +26,23 @@ config.setMahabhutaConfig({
 config.prepare();
 
 
+describe('build site', function() {
+    it('should build site', async function() {
+        this.timeout(25000);
+        let failed = false;
+        let results = await akasha.render(config);
+        for (let result of results) {
+            if (result.error) {
+                failed = true;
+                console.error(result.error);
+            }
+        }
+        assert.isFalse(failed);
+    });
+});
+
 describe('header meta', function() {
     it('should find header meta values', async function() {
-        let result = await akasha.renderPath(config, '/metatags.html');
-
-        assert.exists(result, 'result exists');
-        assert.isString(result, 'result isString');
-        assert.include(result, '.html.md');
-        assert.include(result, 'documents/metatags.html.md');
-        assert.include(result, 'out/metatags.html');
-
         let { html, $ } = await akasha.readRenderedFile(config, 'metatags.html');
 
         assert.exists(html, 'result exists');
@@ -78,14 +85,6 @@ describe('header meta', function() {
 
 describe('header meta', function() {
     it('should find header meta values', async function() {
-        let result = await akasha.renderPath(config, '/linkreltags.html');
-
-        assert.exists(result, 'result exists');
-        assert.isString(result, 'result isString');
-        assert.include(result, '.html.md');
-        assert.include(result, 'documents/linkreltags.html.md');
-        assert.include(result, 'out/linkreltags.html');
-
         let { html, $ } = await akasha.readRenderedFile(config, 'linkreltags.html');
 
         assert.exists(html, 'result exists');
@@ -99,14 +98,6 @@ describe('header meta', function() {
 
 describe('canonical url', function() {
     it('should find canonical url', async function() {
-        let result = await akasha.renderPath(config, '/canonical.html');
-
-        assert.exists(result, 'result exists');
-        assert.isString(result, 'result isString');
-        assert.include(result, '.html.md');
-        assert.include(result, 'documents/canonical.html.md');
-        assert.include(result, 'out/canonical.html');
-
         let { html, $ } = await akasha.readRenderedFile(config, 'canonical.html');
 
         assert.exists(html, 'result exists');
@@ -118,14 +109,6 @@ describe('canonical url', function() {
 
 describe('publication date', function() {
     it('should find publication date', async function() {
-        let result = await akasha.renderPath(config, '/publdate.html');
-
-        assert.exists(result, 'result exists');
-        assert.isString(result, 'result isString');
-        assert.include(result, '.html.md');
-        assert.include(result, 'documents/publdate.html.md');
-        assert.include(result, 'out/publdate.html');
-
         let { html, $ } = await akasha.readRenderedFile(config, 'publdate.html');
 
         assert.exists(html, 'result exists');
@@ -137,14 +120,6 @@ describe('publication date', function() {
 
 describe('toc-group toc-item', function() {
     it('should find TOC Links', async function() {
-        let result = await akasha.renderPath(config, '/tocgroup.html');
-
-        assert.exists(result, 'result exists');
-        assert.isString(result, 'result isString');
-        assert.include(result, '.html.md');
-        assert.include(result, 'documents/tocgroup.html.md');
-        assert.include(result, 'out/tocgroup.html');
-
         let { html, $ } = await akasha.readRenderedFile(config, 'tocgroup.html');
 
         assert.exists(html, 'result exists');
@@ -188,14 +163,6 @@ describe('toc-group toc-item', function() {
 
 describe('image to figure/image', function() {
     it('should find figure/image pair for img', async function() {
-        let result = await akasha.renderPath(config, '/img2figimg.html');
-
-        assert.exists(result, 'result exists');
-        assert.isString(result, 'result isString');
-        assert.include(result, '.html.md');
-        assert.include(result, 'documents/img2figimg.html.md');
-        assert.include(result, 'out/img2figimg.html');
-
         let { html, $ } = await akasha.readRenderedFile(config, 'img2figimg.html');
 
         assert.exists(html, 'result exists');
@@ -212,14 +179,6 @@ describe('image to figure/image', function() {
 
 describe('opengraph images', function() {
     it('should find opengroup images promoted to head', async function() {
-        let result = await akasha.renderPath(config, '/opengraph-image.html');
-
-        assert.exists(result, 'result exists');
-        assert.isString(result, 'result isString');
-        assert.include(result, '.html.md');
-        assert.include(result, 'documents/opengraph-image.html.md');
-        assert.include(result, 'out/opengraph-image.html');
-
         let { html, $ } = await akasha.readRenderedFile(config, 'opengraph-image.html');
 
         assert.exists(html, 'result exists');
@@ -236,14 +195,6 @@ describe('opengraph images', function() {
 
 describe('opengraph promote images', function() {
     it('should find opengroup images promoted to head', async function() {
-        let result = await akasha.renderPath(config, '/opengraph-promote-image.html');
-
-        assert.exists(result, 'result exists');
-        assert.isString(result, 'result isString');
-        assert.include(result, '.html.md');
-        assert.include(result, 'documents/opengraph-promote-image.html.md');
-        assert.include(result, 'out/opengraph-promote-image.html');
-
         let { html, $ } = await akasha.readRenderedFile(config, 'opengraph-promote-image.html');
 
         assert.exists(html, 'result exists');
