@@ -1,7 +1,7 @@
 {
   "name": "akashacms-base-test",
   "version": "1.0.0",
-  "description": "Test suite for akashacms-base module",
+  "description": "Test suite for @akashacms/plugins-base module",
   "main": "index.js",
   "scripts": {
     "test": "mocha ./index",

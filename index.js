@@ -25,7 +25,7 @@ const akasha = require('akasharender');
 const mahabhuta = akasha.mahabhuta;
 const smap  = require('sightmap');
 
-const pluginName = "akashacms-base";
+const pluginName = "@akashacms/plugins-base";
 
 const _plugin_config = Symbol('config');
 const _plugin_options = Symbol('options');

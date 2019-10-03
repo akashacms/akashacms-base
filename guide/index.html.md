@@ -3,23 +3,23 @@ layout: plugin-documentation.html.ejs
 title: AskashaCMS "base" plugin documentation - Foundational support for website construction
 ---
 
-The `akashacms-base` plugin provides foundation-level support for building websites.  This includes useful partials, and a long list of Mahabhuta tags.  They work together to provide a comprehensive base for presenting website content.  
+The `@akashacms/plugins-base` plugin provides foundation-level support for building websites.  This includes useful partials, and a long list of Mahabhuta tags.  They work together to provide a comprehensive base for presenting website content.  
 
 <toc-group>
-<toc-item id="install" title="Installation"></toc-item>
-<toc-item id="config" title="Configuration"></toc-item>
-<toc-item id="custom-tags" title="Custom tags">
+<toc-item anchor="#install" title="Installation"></toc-item>
+<toc-item anchor="#config" title="Configuration"></toc-item>
+<toc-item anchor="#custom-tags" title="Custom tags">
     <toc-group>
-    <toc-item id="metadata" title="Metadata in page header"></toc-item>
-    <toc-item id="link-rel" title="Generating link rel= tags in header"></toc-item>
-    <toc-item id="canonical-url" title="Generate a canonical URL in header"></toc-item>
-    <toc-item id="mktoc" title="Generate a Table of Contents for a page"></toc-item>
-    <toc-item id="publdate" title="Show the Publication Date on the page"></toc-item>
-    <toc-item id="opengraph" title="Promote images with OpenGraph tags"></toc-item>
-    <toc-item id="opengraph-single" title="Promoting a single image for OpenGraph"></toc-item>
+    <toc-item anchor="#metadata" title="Metadata in page header"></toc-item>
+    <toc-item anchor="#link-rel" title="Generating link rel= tags in header"></toc-item>
+    <toc-item anchor="#canonical-url" title="Generate a canonical URL in header"></toc-item>
+    <toc-item anchor="#mktoc" title="Generate a Table of Contents for a page"></toc-item>
+    <toc-item anchor="#publdate" title="Show the Publication Date on the page"></toc-item>
+    <toc-item anchor="#opengraph" title="Promote images with OpenGraph tags"></toc-item>
+    <toc-item anchor="#opengraph-single" title="Promoting a single image for OpenGraph"></toc-item>
     </toc-group>
 </toc-item>
-<toc-item id="sitemaps" title="XML Sitemaps"></toc-item>
+<toc-item anchor="#sitemaps" title="XML Sitemaps"></toc-item>
 </toc-group>
 
 <h1 id="install">Installation</h1>
@@ -29,7 +29,7 @@ With an AkashaCMS website setup, add the following to `package.json`
 ```
   "dependencies": {
     ...
-    "akashacms-base": "0.7.4",
+    "@akashacms/plugins-base": "0.7.6",
     ...
   }
 ```
@@ -41,7 +41,7 @@ Once added to `package.json` run: `npm install`
 In `config.js` for the website:
 
 ```js
-config.use(require('akashacms-base'), {
+config.use(require('@akashacms/plugins-base'), {
     generateSitemapFlag: true
 });
 ```
@@ -60,14 +60,14 @@ This tag renders through the `ak_headermeta.html.ejs` partial.  Consult that fil
 
 <h2 id="link-rel">Generating link rel= tags in header</h2>
 
-Header tags of the pattern `<link rel="..." href="..."/>` are used for many purposes.  AkashaCMS-Base supports simplified method to generate these tags
+Header tags of the pattern `<link rel="..." href="..."/>` are used for many purposes.  AkashaCMS-Base supports simplified method to generate these tags.
 
 The `<ak-header-linkreltags>` tag generates the tags from data provided in the site configuration.
 
 For site-wide link/rel tags use this in `config.js`:
 
 ```
-config.plugin("akashacms-base")
+config.plugin("@akashacms/plugins-base")
     .addLinkRelTag(config, { relationship: "...", url: ".." })
     .addLinkRelTag(config, { relationship: "...", url: ".." });
 ```

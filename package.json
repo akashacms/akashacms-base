@@ -4,7 +4,7 @@
     "email": "david@davidherron.com",
     "url": "http://davidherron.com"
   },
-  "name": "akashacms-base",
+  "name": "@akashacms/plugins-base",
   "keywords": [
     "content management system",
     "cms",
@@ -21,12 +21,12 @@
     "akashacms"
   ],
   "description": "AksahsCMS Plugin providing base website functionality.",
-  "homepage": "http://akashacms.com/",
+  "homepage": "https://akashacms.com/plugins/base/index.html",
   "repository": {
     "type": "git",
     "url": "git://github.com/akashacms/akashacms-base.git"
   },
-  "version": "0.7.5",
+  "version": "0.7.6",
   "engines": {
     "node": ">=12.2"
   },
