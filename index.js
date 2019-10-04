@@ -68,7 +68,11 @@ module.exports = class BasePlugin extends akasha.Plugin {
         if (!href) href = "/sitemap.xml";
         // var title = $element.attr("title");
         // if (!title) title = "Sitemap";
-        return `<link rel="sitemap" type="application/xml" title="${metadata.title}" href="${href}" />`;
+        let $ = mahabhuta.parse('<link rel="sitemap" type="application/xml" title="" href="" />');
+        $.attr('title', metadata.title);
+        $.attr('href', href);
+        return $.html();
+        // return `<link rel="sitemap" type="application/xml" title="${metadata.title}" href="${href}" />`;
         // return `<xml-sitemap title="${metadata.title}" href="/sitemap.xml" />`; // akasha.partialSync(this._config, 'ak_sitemap.html.ejs', metadata);
     }
 
