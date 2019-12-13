@@ -66,14 +66,10 @@ module.exports = class BasePlugin extends akasha.Plugin {
         // http://microformats.org/wiki/rel-sitemap
         var href = undefined; // $element.attr("href");
         if (!href) href = "/sitemap.xml";
-        // var title = $element.attr("title");
-        // if (!title) title = "Sitemap";
         let $ = mahabhuta.parse('<link rel="sitemap" type="application/xml" title="" href="" />');
-        $.attr('title', metadata.title);
-        $.attr('href', href);
+        $('link').attr('title', metadata.title);
+        $('link').attr('href', href);
         return $.html();
-        // return `<link rel="sitemap" type="application/xml" title="${metadata.title}" href="${href}" />`;
-        // return `<xml-sitemap title="${metadata.title}" href="/sitemap.xml" />`; // akasha.partialSync(this._config, 'ak_sitemap.html.ejs', metadata);
     }
 
     generateSitemap(config, doit) {

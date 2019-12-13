@@ -96,6 +96,27 @@ describe('header meta', function() {
     });
 });
 
+
+describe('@akashacms/plugins-base doHeaderMetaSync doGoogleSitemap', function() {
+    it('should call those functions w/o failure', async function() {
+        let { html, $ } = await akasha.readRenderedFile(config, 'do-plugin-base-direct-calls.html');
+
+        assert.exists(html, 'result exists');
+        assert.isString(html, 'result isString');
+        assert.equal($('article meta[name="pagename"]').length, 1);
+        assert.include($('article meta[name="pagename"]').attr('content'), "Directly call @akashacms/plugins-base functions");
+        assert.equal($('article meta[name="date"]').length, 1);
+        assert.equal($('article meta[name="DC.title"]').length, 1);
+        assert.include($('article meta[name="DC.title"]').attr('content'), "Directly call @akashacms/plugins-base functions");
+        assert.equal($('article meta[name="og:title"]').length, 1);
+        assert.include($('article meta[name="og:title"]').attr('content'), "Directly call @akashacms/plugins-base functions");
+        assert.equal($('article meta[name="og:url"]').length, 1);
+        assert.equal($('article link[rel="canonical"]').length, 1);
+        assert.equal($('article link[rel="sitemap"]').length, 1);
+        assert.include($('article link[rel="sitemap"]').attr('title'), "Directly call @akashacms/plugins-base functions");
+    });
+});
+
 describe('canonical url', function() {
     it('should find canonical url', async function() {
         let { html, $ } = await akasha.readRenderedFile(config, 'canonical.html');
