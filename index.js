@@ -276,6 +276,7 @@ class TOCGroupElement extends mahabhuta.CustomElement {
                 ? $element.html()
                 : "";
 
+        dirty();
         return akasha.partial(this.array.options.config, template, {
             id, additionalClasses, suppressContents,
             content
@@ -305,6 +306,7 @@ class TOCItemElement extends mahabhuta.CustomElement {
                 ? $element.html()
                 : "";
 
+        dirty();
         return akasha.partial(this.array.options.config, template, {
             id, additionalClasses, title, anchor,
             content
@@ -375,6 +377,8 @@ class OpenGraphPromoteImages extends mahabhuta.Munger {
     get selector() { return "html head open-graph-promote-images"; }
 
     async process($, $link, metadata, dirty) {
+
+        // console.log(`OpenGraphPromoteImages ${$.html()}`);
 
         var imgcount = 0;
         // Look for <img> tags
