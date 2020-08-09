@@ -51,7 +51,7 @@ module.exports = class BasePlugin extends akasha.Plugin {
 
     doHeaderMetaSync(config, metadata) {
         return akasha.partialSync(config,
-            "ak_headermeta.html.ejs",
+            "ak_headermeta.html.njk",
             fixHeaderMeta(metadata));
     }
 
@@ -191,7 +191,7 @@ class HeaderMetatagsElement extends mahabhuta.CustomElement {
     get elementName() { return "ak-header-metatags"; }
     process($element, metadata, dirty) {
         return akasha.partial(this.array.options.config,
-                "ak_headermeta.html.ejs",
+                "ak_headermeta.html.njk",
                 fixHeaderMeta(metadata));
     }
 }
@@ -254,7 +254,7 @@ class PublicationDateElement extends mahabhuta.CustomElement {
     get elementName() { return "publication-date"; }
     async process($element, metadata, dirty) {
         if (metadata.publicationDate) {
-            return akasha.partial(this.array.options.config, "ak_publdate.html.ejs", {
+            return akasha.partial(this.array.options.config, "ak_publdate.html.njk", {
                 publicationDate: metadata.publicationDate
             });
         } else return "";
@@ -266,7 +266,7 @@ class TOCGroupElement extends mahabhuta.CustomElement {
     async process($element, metadata, dirty) {
         const template = $element.attr('template') 
                 ? $element.attr('template')
-                :  "ak_toc_group_element.html.ejs";
+                :  "ak_toc_group_element.html.njk";
         const id = $element.attr('id');
         const additionalClasses = $element.attr('additional-classes')
                 ? $element.attr('additional-classes')
@@ -289,7 +289,7 @@ class TOCItemElement extends mahabhuta.CustomElement {
     async process($element, metadata, dirty) {
         const template = $element.attr('template') 
                 ? $element.attr('template')
-                :  "ak_toc_item_element.html.ejs";
+                :  "ak_toc_item_element.html.njk";
         const id = $element.attr('id');
         const additionalClasses = $element.attr('additional-classes')
                 ? $element.attr('additional-classes')
@@ -432,10 +432,12 @@ class OpenGraphPromoteImages extends mahabhuta.Munger {
                     }
                 }
                 if ($(`meta[content="${href}"]`).get(0) === undefined) {
-                    let txt = await akasha.partial(this.array.options.config, 'ak_metatag.html.ejs', {
-                        tagname: 'og:image',
-                        tagcontent: href
-                    });
+
+                    let $new = mahabhuta.parse('<meta name="" content=""/>');
+                    $new('meta').attr('name', 'og:image');
+                    $new('meta').attr('content', href);
+                    let txt = $new.html();
+
                     if (txt) {
                         // console.log(`${metadata.rendered_url} appending image meta ${txt}`);
                         imgcount++;

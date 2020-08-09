@@ -1,0 +1,8 @@
+{% if id %}
+<li id="{{ id | escape }}" class="{{ additionalClasses | escape }}">
+{% else %}
+<li class="{{ additionalClasses | escape }}">
+{% endif %}
+    <a href="{{ anchor | escape }}">{{ title | escape }}</a>
+    {{ content }}
+</li>

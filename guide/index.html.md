@@ -56,7 +56,7 @@ There's a lot of metadata, Open Graph etc, that can be put into the `<head>` sec
 
 The `<ak-header-metatags>` tag generates most of these tags using page metadata.
 
-This tag renders through the `ak_headermeta.html.ejs` partial.  Consult that file for details.
+This tag renders through the `ak_headermeta.html.njk` partial.  Consult that file for details.
 
 <h2 id="link-rel">Generating link rel= tags in header</h2>
 
@@ -98,13 +98,13 @@ Many websites have a "table of contents" block at the top of a page to help navi
 
 With `<toc-group>` we generate a container for such a table of contents.  Attributes are:
 
-* `template` for an alternative to the standard template (`ak_toc_group_element.html.ejs`)
+* `template` for an alternative to the standard template (`ak_toc_group_element.html.njk`)
 * `id` for the ID of the `toc-group`
 * `additional-classes` for additional class declarations to add to the `class` attribute
 
 This element is expected to contain `<toc-item>` elements that will be the links to locations within the page.  Attributes to this element are:
 
-* `template` for an alternative to the standard template (`ak_toc_group_element.html.ejs`)
+* `template` for an alternative to the standard template (`ak_toc_group_element.html.njk`)
 * `id` for the ID of the `toc-group`
 * `additional-classes` for additional class declarations to add to the `class` attribute
 * `title` for the anchor text in the generated link
@@ -128,7 +128,7 @@ It's often desirable to show the publication date for a page.  It's often desira
 
 The page can include `publicationDate` in its metadata.  If missing, AkashaRender substitutes in the last modification date of the content file.
 
-The tag `<publication-date>` formats that date through the `ak_publdate.html.ejs` partial.
+The tag `<publication-date>` formats that date through the `ak_publdate.html.njk` partial.
 
 <h2 id="opengraph">Promote images with OpenGraph tags</h2>
 
