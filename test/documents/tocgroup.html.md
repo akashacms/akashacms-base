@@ -3,7 +3,7 @@ title: TOC Group/Item test
 layout: default.html.ejs
 ---
 
-<toc-group>
+<toc-group id="the-group">
 <toc-item anchor="#install" title="Installation"></toc-item>
 <toc-item anchor="#config" title="Configuration"></toc-item>
 <toc-item anchor="#custom-tags" title="Custom tags">

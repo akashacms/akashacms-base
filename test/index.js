@@ -145,6 +145,8 @@ describe('toc-group toc-item', function() {
 
         assert.exists(html, 'result exists');
         assert.isString(html, 'result isString');
+
+        assert.equal($('article div#the-group').length, 1);
         
         assert.include($('article ol li a[href="#install"]').attr('href'), 'install');
         assert.include($('article ol li a[href="#install"]').html(), 'Installation');
