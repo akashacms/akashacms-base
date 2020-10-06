@@ -276,7 +276,7 @@ class CanonicalURLElement extends mahabhuta.CustomElement {
 class PublicationDateElement extends mahabhuta.CustomElement {
     get elementName() { return "publication-date"; }
     async process($element, metadata, dirty) {
-        console.log(`PublicationDateElement ${util.inspect(metadata.publicationDate)}`);
+        // console.log(`PublicationDateElement ${util.inspect(metadata.publicationDate)}`);
         return this.array.options.config.plugin(pluginName)
                     .doPublicationDate(metadata.publicationDate);
     }
