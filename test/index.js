@@ -42,9 +42,8 @@ describe('build site', function() {
 });
 
 describe('header meta', function() {
-    it('should find header meta values', async function() {
-        let { html, $ } = await akasha.readRenderedFile(config, 'metatags.html');
 
+    let checkMeta = (html, $) => {
         assert.exists(html, 'result exists');
         assert.isString(html, 'result isString');
 
@@ -79,20 +78,41 @@ describe('header meta', function() {
         assert.include($('head meta[name="DC.title"]').attr('content'), "Metatags test");
         assert.include($('head meta[name="og:title"]').attr('content'), "Metatags test");
         assert.include($('head meta[name="og:description"]').attr('content'), "Way out man, so far out");
+    };
+
+    it('should find header meta values', async function() {
+        let { html, $ } = await akasha.readRenderedFile(config, 'metatags.html');
+        checkMeta(html, $);
         assert.include($('head link[rel="canonical"]').attr('href'), "https://example.akashacms.com/metatags.html");
+    });
+
+    it('should find header meta values w/ NJK macros', async function() {
+        let { html, $ } = await akasha.readRenderedFile(config, 'metatags-macros.html');
+        console.log(html);
+        checkMeta(html, $);
+        assert.include($('head link[rel="canonical"]').attr('href'), "https://example.akashacms.com/metatags-macros.html");
     });
 });
 
 describe('header meta', function() {
-    it('should find header meta values', async function() {
-        let { html, $ } = await akasha.readRenderedFile(config, 'linkreltags.html');
 
+    let checkLinkRel = (html, $) => {
         assert.exists(html, 'result exists');
         assert.isString(html, 'result isString');
 
         assert.include($('head link[rel="foo"]').attr('href'), "http://foo.bar");
         assert.include($('head link[rel="gronk"]').attr('href'), "http://gronk.bar");
         assert.include($('head link[rel="them"]').attr('href'), "http://them.bar");
+    };
+
+    it('should find header meta values', async function() {
+        let { html, $ } = await akasha.readRenderedFile(config, 'linkreltags.html');
+        checkLinkRel(html, $);
+    });
+
+    it('should find header meta values w/ NJK macros', async function() {
+        let { html, $ } = await akasha.readRenderedFile(config, 'linkreltags-macros.html');
+        checkLinkRel(html, $);
     });
 });
 
@@ -125,6 +145,15 @@ describe('canonical url', function() {
         assert.isString(html, 'result isString');
 
         assert.include($('head link[rel="canonical"]').attr('href'), "https://example.akashacms.com/canonical.html");
+    });
+
+    it('should find canonical url w/ NJK macros', async function() {
+        let { html, $ } = await akasha.readRenderedFile(config, 'canonical-macros.html');
+
+        assert.exists(html, 'result exists');
+        assert.isString(html, 'result isString');
+
+        assert.include($('head link[rel="canonical"]').attr('href'), "https://example.akashacms.com/canonical-macros.html");
     });
 });
 

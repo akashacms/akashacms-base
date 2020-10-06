@@ -1,0 +1,11 @@
+{% macro linkRelTags() %}
+{{ config.plugin("@akashacms/plugins-base").doLinkRelTags() }}
+{% endmacro %}
+
+{% macro canonicalURL() %}
+{{ config.plugin("@akashacms/plugins-base").doCanonicalURL(rendered_url) }}
+{% endmacro %}
+
+{% macro headerMeta() %}
+{% include "ak_headermeta.html.njk" %}
+{% endmacro %}

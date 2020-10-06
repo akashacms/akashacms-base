@@ -40,7 +40,7 @@ module.exports = class BasePlugin extends akasha.Plugin {
         this[_plugin_options] = options;
         options.config = config;
         config.addPartialsDir(path.join(__dirname, 'partials'));
-        config.addLayoutsDir(path.join(__dirname, 'layout'));
+        config.addLayoutsDir(path.join(__dirname, 'layouts'));
         config.addAssetsDir(path.join(__dirname, 'assets'));
         config.addMahabhuta(module.exports.mahabhutaArray(options));
         if (!options.linkRelTags) this[_plugin_options].linkRelTags = [];
@@ -50,14 +50,40 @@ module.exports = class BasePlugin extends akasha.Plugin {
     get options() { return this[_plugin_options]; }
 
     doHeaderMetaSync(config, metadata) {
-        return akasha.partialSync(config,
-            "ak_headermeta.html.njk",
+        return akasha.partialSync(this.config,
+            "ak_headermeta.html.handlebars",
+            fixHeaderMeta(metadata));
+    }
+
+    async doHeaderMeta(config, metadata) {
+        return akasha.partial(this.config,
+            "ak_headermeta.html.handlebars",
             fixHeaderMeta(metadata));
     }
 
     addLinkRelTag(config, lrTag) {
         this.options.linkRelTags.push(lrTag);
         return this;
+    }
+
+    doLinkRelTags() {
+
+        var ret = "";
+        // console.log(`ak-header-linkreltags `, this.array.options);
+        if (this.options.linkRelTags.length > 0) {
+            for (var lrtag of this.options.linkRelTags) {
+                ret += doLinkRelTag(this.config, lrtag);
+            }
+        }
+        // console.log(`ak-header-linkreltags `, ret);
+        return ret;
+    }
+
+    doCanonicalURL(rendered_url) {
+        doLinkRelTag(this.config, {
+            relationship: "canonical",
+            url: rendered_url
+        });
     }
 
     doGoogleSitemap(metadata) {
@@ -131,7 +157,7 @@ module.exports = class BasePlugin extends akasha.Plugin {
 module.exports.mahabhutaArray = function(options) {
     let ret = new mahabhuta.MahafuncArray(pluginName, options);
     ret.addMahafunc(new HeaderMetatagsElement());
-    ret.addMahafunc(new XMLSitemap());
+    // ret.addMahafunc(new XMLSitemap());
     ret.addMahafunc(new LinkRelTagsElement());
     ret.addMahafunc(new CanonicalURLElement());
     ret.addMahafunc(
@@ -141,7 +167,7 @@ module.exports.mahabhutaArray = function(options) {
             if (elements.length <= 0) return done();
             return done(new Error("ak-siteverification deprecated, use site-verification instead"));
         });
-    ret.addMahafunc(new GoogleAnalyticsElement());
+    // ret.addMahafunc(new GoogleAnalyticsElement());
     ret.addMahafunc(new PublicationDateElement());
     ret.addMahafunc(new TOCGroupElement());
     ret.addMahafunc(new TOCItemElement());
@@ -191,18 +217,19 @@ class HeaderMetatagsElement extends mahabhuta.CustomElement {
     get elementName() { return "ak-header-metatags"; }
     process($element, metadata, dirty) {
         return akasha.partial(this.array.options.config,
-                "ak_headermeta.html.njk",
+                "ak_headermeta.html.handlebars",
                 fixHeaderMeta(metadata));
     }
 }
 
 /* Moved to Mahabhuta */
-class XMLSitemap extends mahabhuta.CustomElement {
-    get elementName() { return "ak-sitemapxml"; }
-    process($element, metadata, dirty) {
-        return Promise.reject(new Error("ak-sitemapxml deprecated"));
-    }
-}
+// TODO move to a deprecated plugin
+// class XMLSitemap extends mahabhuta.CustomElement {
+//    get elementName() { return "ak-sitemapxml"; }
+//    process($element, metadata, dirty) {
+//        return Promise.reject(new Error("ak-sitemapxml deprecated"));
+//    }
+// }
 
 function doLinkRelTag(config, lrtag) {
     return `<link rel="${lrtag.relationship}" href="${lrtag.url}" />`;
@@ -215,6 +242,17 @@ function doLinkRelTag(config, lrtag) {
 class LinkRelTagsElement extends mahabhuta.CustomElement {
     get elementName() { return "ak-header-linkreltags"; }
     process($element, metadata, dirty) {
+        if (!this.array) {
+            console.error('LinkRelTagsElement NO ARRAY');
+        }
+        if (!this.array.options) {
+            console.error('LinkRelTagsElement ARRAY NO OPTIONS');
+        }
+        if (!this.array.options.config) {
+            console.error('LinkRelTagsElement ARRAY OPTIONS NO CONFIG');
+        }
+        return this.array.options.config.plugin(pluginName).doLinkRelTags();
+        /* 
         var ret = "";
         // console.log(`ak-header-linkreltags `, this.array.options);
         if (this.array.options.linkRelTags.length > 0) {
@@ -227,28 +265,42 @@ class LinkRelTagsElement extends mahabhuta.CustomElement {
             for (var lrtag of this.array.options.linkRelTags) {
                 ret += doLinkRelTag(this.array.options.config, lrtag);
             }
-        } */
+        } * /
         // console.log(`ak-header-linkreltags `, ret);
         return ret;
+        */
     }
 }
 
 class CanonicalURLElement extends mahabhuta.CustomElement {
     get elementName() { return "ak-header-canonical-url"; }
     process($element, metadata, dirty) {
+        if (!this.array) {
+            console.error('CanonicalURLElement NO ARRAY');
+        }
+        if (!this.array.options) {
+            console.error('CanonicalURLElement ARRAY NO OPTIONS');
+        }
+        if (!this.array.options.config) {
+            console.error('CanonicalURLElement ARRAY OPTIONS NO CONFIG');
+        }
+        return this.array.options.config.plugin(pluginName).doCanonicalURL(metadata.rendered_url);
+        /*
         return doLinkRelTag(this.array.options.config, {
             relationship: "canonical",
             url: metadata.rendered_url
         });
+        */
     }
 }
 
-class GoogleAnalyticsElement extends mahabhuta.CustomElement {
-    get elementName() { return "ak-google-analytics"; }
-    process($element, metadata, dirty) {
-        return Promise.reject("ak-google-analytics deprecated")
-    }
-}
+// TODO move to a deprecated plugin
+// class GoogleAnalyticsElement extends mahabhuta.CustomElement {
+//     get elementName() { return "ak-google-analytics"; }
+//     process($element, metadata, dirty) {
+//         return Promise.reject("ak-google-analytics deprecated")
+//     }
+// }
 
 class PublicationDateElement extends mahabhuta.CustomElement {
     get elementName() { return "publication-date"; }
