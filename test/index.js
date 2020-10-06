@@ -88,7 +88,6 @@ describe('header meta', function() {
 
     it('should find header meta values w/ NJK macros', async function() {
         let { html, $ } = await akasha.readRenderedFile(config, 'metatags-macros.html');
-        console.log(html);
         checkMeta(html, $);
         assert.include($('head link[rel="canonical"]').attr('href'), "https://example.akashacms.com/metatags-macros.html");
     });
@@ -164,7 +163,16 @@ describe('publication date', function() {
         assert.exists(html, 'result exists');
         assert.isString(html, 'result isString');
 
-        assert.include($('article').html(), "Date: August 16, 2019 12:54 PM PDT");
+        assert.include($('article').html(), "Aug 16 2019");
+    });
+
+    it('should find publication date w/ NJK Macros', async function() {
+        let { html, $ } = await akasha.readRenderedFile(config, 'publdate-macros.html');
+
+        assert.exists(html, 'result exists');
+        assert.isString(html, 'result isString');
+
+        assert.include($('article').html(), "Aug 16 2019");
     });
 });
 

@@ -98,6 +98,16 @@ module.exports = class BasePlugin extends akasha.Plugin {
         return $.html();
     }
 
+    doPublicationDate(publicationDate) {
+        if (publicationDate) {
+            // console.log(`doPublicationDate ${util.inspect(publicationDate)}`);
+            let d = new Date(publicationDate);
+            return akasha.partialSync(this.config, "ak_publdate.html.njk", {
+                publicationDate: d.toDateString()
+            });
+        } else return "";
+    }
+
     generateSitemap(config, doit) {
         this.options.generateSitemapFlag = doit;
         return this;
@@ -242,55 +252,16 @@ function doLinkRelTag(config, lrtag) {
 class LinkRelTagsElement extends mahabhuta.CustomElement {
     get elementName() { return "ak-header-linkreltags"; }
     process($element, metadata, dirty) {
-        if (!this.array) {
-            console.error('LinkRelTagsElement NO ARRAY');
-        }
-        if (!this.array.options) {
-            console.error('LinkRelTagsElement ARRAY NO OPTIONS');
-        }
-        if (!this.array.options.config) {
-            console.error('LinkRelTagsElement ARRAY OPTIONS NO CONFIG');
-        }
-        return this.array.options.config.plugin(pluginName).doLinkRelTags();
-        /* 
-        var ret = "";
-        // console.log(`ak-header-linkreltags `, this.array.options);
-        if (this.array.options.linkRelTags.length > 0) {
-            for (var lrtag of this.array.options.linkRelTags) {
-                ret += doLinkRelTag(this.array.options.config, lrtag);
-            }
-        }
-        // Why was this here a 2nd time?
-        /* if (this.array.options.linkRelTags.length > 0) {
-            for (var lrtag of this.array.options.linkRelTags) {
-                ret += doLinkRelTag(this.array.options.config, lrtag);
-            }
-        } * /
-        // console.log(`ak-header-linkreltags `, ret);
-        return ret;
-        */
+        return this.array.options.config.plugin(pluginName)
+                    .doLinkRelTags();
     }
 }
 
 class CanonicalURLElement extends mahabhuta.CustomElement {
     get elementName() { return "ak-header-canonical-url"; }
     process($element, metadata, dirty) {
-        if (!this.array) {
-            console.error('CanonicalURLElement NO ARRAY');
-        }
-        if (!this.array.options) {
-            console.error('CanonicalURLElement ARRAY NO OPTIONS');
-        }
-        if (!this.array.options.config) {
-            console.error('CanonicalURLElement ARRAY OPTIONS NO CONFIG');
-        }
-        return this.array.options.config.plugin(pluginName).doCanonicalURL(metadata.rendered_url);
-        /*
-        return doLinkRelTag(this.array.options.config, {
-            relationship: "canonical",
-            url: metadata.rendered_url
-        });
-        */
+        return this.array.options.config.plugin(pluginName)
+                    .doCanonicalURL(metadata.rendered_url);
     }
 }
 
@@ -305,11 +276,9 @@ class CanonicalURLElement extends mahabhuta.CustomElement {
 class PublicationDateElement extends mahabhuta.CustomElement {
     get elementName() { return "publication-date"; }
     async process($element, metadata, dirty) {
-        if (metadata.publicationDate) {
-            return akasha.partial(this.array.options.config, "ak_publdate.html.njk", {
-                publicationDate: metadata.publicationDate
-            });
-        } else return "";
+        console.log(`PublicationDateElement ${util.inspect(metadata.publicationDate)}`);
+        return this.array.options.config.plugin(pluginName)
+                    .doPublicationDate(metadata.publicationDate);
     }
 }
 

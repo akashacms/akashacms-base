@@ -9,3 +9,7 @@
 {% macro headerMeta() %}
 {% include "ak_headermeta.html.njk" %}
 {% endmacro %}
+
+{% macro doPublicationDate() %}
+{{ config.plugin("@akashacms/plugins-base").doPublicationDate(publicationDate) }}
+{% endmacro %}
