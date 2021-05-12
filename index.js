@@ -428,9 +428,9 @@ class OpenGraphPromoteImages extends mahabhuta.Munger {
         for (let href of imgz) {
             // let href = $(img).attr('src');
             // console.log(`${metadata.rendered_url} image ${href}`);
-            if (href.match(/\/img\/extlink.png$/)
+            if (href && (href.match(/\/img\/extlink.png$/)
                 || href.match(/\/img\/rss_button.png$/)
-                || href.match(/\/img\/rss_button.gif$/)) {
+                || href.match(/\/img\/rss_button.gif$/))) {
                     // Ignore these images
             } else {
                 if (href && href.length > 0) {
