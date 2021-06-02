@@ -27,6 +27,16 @@ config.prepare();
 
 
 describe('build site', function() {
+    it('should run setup', async function() {
+        this.timeout(75000);
+        await config.setup();
+    });
+
+    it('should copy assets', async function() {
+        this.timeout(75000);
+        await config.copyAssets();
+    });
+
     it('should build site', async function() {
         this.timeout(25000);
         let failed = false;
@@ -273,5 +283,11 @@ describe('opengraph promote images', function() {
         assert.equal($('body img#img-from-partial').length, 1);
         assert.equal($('head meta[content="https://example.akashacms.com/img-from-partial-ejs.jpg"]').length, 1);
         assert.equal($('body img#img-from-partial-ejs').length, 1);
+    });
+});
+
+describe('Finish', function() {
+    it('should close the configuration', async function() {
+        await config.close();
     });
 });
