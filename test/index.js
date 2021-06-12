@@ -27,9 +27,34 @@ config.prepare();
 
 
 describe('build site', function() {
-    it('should run setup', async function() {
+    it('should successfully setup cache database', async function() {
+        try {
+            await akasha.cacheSetup(config);
+        } catch (e) {
+            console.error(e);
+            throw e;
+        }
+    });
+
+    it('should successfully setup file caches', async function() {
         this.timeout(75000);
-        await config.setup();
+        try {
+            await Promise.all([
+                akasha.setupDocuments(config),
+                akasha.setupAssets(config),
+                akasha.setupLayouts(config),
+                akasha.setupPartials(config)
+            ])
+            await Promise.all([
+                (await akasha.filecache).documents.isReady(),
+                (await akasha.filecache).assets.isReady(),
+                (await akasha.filecache).layouts.isReady(),
+                (await akasha.filecache).partials.isReady()
+            ]);
+        } catch (e) {
+            console.error(e);
+            throw e;
+        }
     });
 
     it('should copy assets', async function() {
@@ -288,6 +313,11 @@ describe('opengraph promote images', function() {
 
 describe('Finish', function() {
     it('should close the configuration', async function() {
-        await config.close();
+        try {
+            await akasha.closeCaches();
+        } catch (e) {
+            console.error(e);
+            throw e;
+        }
     });
 });
