@@ -18,6 +18,7 @@
  */
 
 const fs    = require('fs');
+const fsp   = fs.promises;
 const path  = require('path');
 const util  = require('util');
 const url   = require('url');
@@ -118,11 +119,20 @@ module.exports = class BasePlugin extends akasha.Plugin {
             return Promise.resolve("skipped");
         }
         var rendered_files = [];
-        var documents = await akasha.documentSearch(config, {
-            renderers: [ akasha.HTMLRenderer ]
+        const documents = (await akasha.filecache).documents.search(config, {
+            renderglob: '**/*.html'
+            // renderers: [ akasha.HTMLRenderer ]
         });
-
+        
         for (let doc of documents) {
+            if (!doc.stat) {
+                try {
+                    doc.stat = await fsp.stat(doc.fspath);
+                } catch (err) {
+                    // console.error(`BASE PLUGIN onSiteRendered could not stat ${doc.fspath} because`, err.stack);
+                    doc.stat = undefined;
+                }
+            }
             var fDate = new Date(doc.stat.mtime);
             var mm = fDate.getMonth() + 1;
             if (mm < 10) {
