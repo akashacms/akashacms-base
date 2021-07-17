@@ -406,6 +406,7 @@ class img2figureImage extends mahabhuta.CustomElement {
 
 class OpenGraphPromoteImages extends mahabhuta.Munger {
     get selector() { return "html head open-graph-promote-images"; }
+    get elementName() { return 'html head open-graph-promote-images'; }
 
     async process($, $link, metadata, dirty) {
 
@@ -451,8 +452,7 @@ class OpenGraphPromoteImages extends mahabhuta.Munger {
                         if (pHref.path.match(/^\//)) {
                             href = this.array.options.config.root_url + href;
                         } else {
-                            let pRendered = url.parse(metadata.rendered_url);
-                            let dirRender = path.dirname(pRendered.path);
+                            let dirRender = path.dirname(metadata.document.renderTo);
                             let pRootUrl = url.parse(this.array.options.config.root_url);
                             pRootUrl.pathname = dirRender !== "/"
                                             ? dirRender +'/'+ href
