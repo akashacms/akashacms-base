@@ -177,7 +177,6 @@ module.exports = class BasePlugin extends akasha.Plugin {
 module.exports.mahabhutaArray = function(options) {
     let ret = new mahabhuta.MahafuncArray(pluginName, options);
     ret.addMahafunc(new HeaderMetatagsElement());
-    // ret.addMahafunc(new XMLSitemap());
     ret.addMahafunc(new LinkRelTagsElement());
     ret.addMahafunc(new CanonicalURLElement());
     ret.addMahafunc(
@@ -187,11 +186,9 @@ module.exports.mahabhutaArray = function(options) {
             if (elements.length <= 0) return done();
             return done(new Error("ak-siteverification deprecated, use site-verification instead"));
         });
-    // ret.addMahafunc(new GoogleAnalyticsElement());
     ret.addMahafunc(new PublicationDateElement());
     ret.addMahafunc(new TOCGroupElement());
     ret.addMahafunc(new TOCItemElement());
-    ret.addMahafunc(new AuthorLinkElement());
     ret.addMahafunc(new OpenGraphPromoteImages());
     return ret;
 };
@@ -242,21 +239,8 @@ class HeaderMetatagsElement extends mahabhuta.CustomElement {
     }
 }
 
-/* Moved to Mahabhuta */
-// TODO move to a deprecated plugin
-// class XMLSitemap extends mahabhuta.CustomElement {
-//    get elementName() { return "ak-sitemapxml"; }
-//    process($element, metadata, dirty) {
-//        return Promise.reject(new Error("ak-sitemapxml deprecated"));
-//    }
-// }
-
 function doLinkRelTag(config, lrtag) {
     return `<link rel="${lrtag.relationship}" href="${lrtag.url}" />`;
-    // return akasha.partial(this.array.options.config, "ak_linkreltag.html.ejs", {
-    //     relationship: lrtag.relationship,
-    //     url: lrtag.url
-    // });
 }
 
 class LinkRelTagsElement extends mahabhuta.CustomElement {
@@ -274,14 +258,6 @@ class CanonicalURLElement extends mahabhuta.CustomElement {
                     .doCanonicalURL(metadata.rendered_url);
     }
 }
-
-// TODO move to a deprecated plugin
-// class GoogleAnalyticsElement extends mahabhuta.CustomElement {
-//     get elementName() { return "ak-google-analytics"; }
-//     process($element, metadata, dirty) {
-//         return Promise.reject("ak-google-analytics deprecated")
-//     }
-// }
 
 class PublicationDateElement extends mahabhuta.CustomElement {
     get elementName() { return "publication-date"; }
@@ -345,65 +321,6 @@ class TOCItemElement extends mahabhuta.CustomElement {
     }
 }
 
-
-
-
-// TODO revamp this
-// TODO this doesn't seem to be used anywhere so I haven't tested it.
-class AuthorLinkElement extends mahabhuta.CustomElement {
-    get elementName() { return "author-link"; }
-    process($element, metadata, dirty, done) {
-        throw new Error("author-link disabled");
-        /* if (typeof this.array.options.config.authorship === 'undefined') {
-            return Promise.resolve("");
-        }
-        var author;
-        for (var i in this.array.options.config.authorship.authors) {
-            if (this.array.options.config.authorship.authors[i].name === auname) {
-                author = this.array.options.config.authorship.authors[i];
-                break;
-            }
-        }
-        if (author) {
-            return akasha.partial(this.array.options.config, "ak_authorship.html.ejs", {
-                fullname: author.fullname,
-                authorship: author.authorship
-            });
-        } else {
-            console.error(`author-link: no author data found for ${auname} in ${metadata.document.path}`);
-            throw new Error(`author-link: no author data found for ${auname} in ${metadata.document.path}`);
-        } */
-    }
-}
-
-/*
-class img2figureImage extends mahabhuta.CustomElement {
-    get elementName() { return 'html body img[figure]'; }
-    async process($element, metadata, dirty, done) {
-        // console.log($element);
-        const template = $element.attr('template') 
-                ? $element.attr('template')
-                :  "ak_figimg.html.ejs";
-        const id = $element.attr('id');
-        const clazz = $element.attr('class');
-        const style = $element.attr('style');
-        const width = $element.attr('width');
-        const src = $element.attr('src');
-        const dest    = $element.attr('dest');
-        const content = $element.attr('caption')
-                ? $element.attr('caption')
-                : "";
-        
-        dirty();
-
-        return akasha.partial(this.array.options.config, template, {
-            id, clazz, style, width, href: src, dest,
-            caption: content
-        });
-    }
-}
-*/
-
 class OpenGraphPromoteImages extends mahabhuta.Munger {
     get selector() { return "html head open-graph-promote-images"; }
     get elementName() { return 'html head open-graph-promote-images'; }
@@ -454,10 +371,17 @@ class OpenGraphPromoteImages extends mahabhuta.Munger {
                         } else {
                             let dirRender = path.dirname(metadata.document.renderTo);
                             let pRootUrl = url.parse(this.array.options.config.root_url);
-                            pRootUrl.pathname = dirRender !== "/"
-                                            ? dirRender +'/'+ href
-                                            : href;
+                            // This is an image relative to
+                            // the document.  If the document is
+                            // in the root directory, then we must not
+                            // prepend the document's directory to
+                            // the image href.
+                            pRootUrl.pathname =
+                              (dirRender !== "/" && dirRender !== '.')
+                                    ? dirRender +'/'+ href
+                                    : href;
                             // console.log(pRootUrl);
+                            // console.log(`in ${metadata.document.renderTo} dirRender ${dirRender} href ${href} `, pRootUrl);
                             href = url.format(pRootUrl);
                         }
                     }

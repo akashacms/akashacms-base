@@ -28,6 +28,7 @@ config.prepare();
 
 describe('build site', function() {
     it('should successfully setup cache database', async function() {
+        this.timeout(75000);
         try {
             await akasha.cacheSetup(config);
         } catch (e) {
@@ -267,6 +268,7 @@ describe('image to figure/image', function() {
         // However this piece of testing must happen here.
 
         assert.equal($('head meta[name="og:image"]').length, 1);
+        // console.log($('head meta[name="og:image"]').attr('content'))
         assert.include($('head meta[name="og:image"]').attr('content'), 
             "https://example.akashacms.com/img/Human-Skeleton.jpg");
     });
