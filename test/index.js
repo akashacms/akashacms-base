@@ -27,6 +27,42 @@ config.prepare();
 
 
 describe('build site', function() {
+    it('should successfully setup cache database', async function() {
+        this.timeout(75000);
+        try {
+            await akasha.cacheSetup(config);
+        } catch (e) {
+            console.error(e);
+            throw e;
+        }
+    });
+
+    it('should successfully setup file caches', async function() {
+        this.timeout(75000);
+        try {
+            await Promise.all([
+                akasha.setupDocuments(config),
+                akasha.setupAssets(config),
+                akasha.setupLayouts(config),
+                akasha.setupPartials(config)
+            ])
+            await Promise.all([
+                (await akasha.filecache).documents.isReady(),
+                (await akasha.filecache).assets.isReady(),
+                (await akasha.filecache).layouts.isReady(),
+                (await akasha.filecache).partials.isReady()
+            ]);
+        } catch (e) {
+            console.error(e);
+            throw e;
+        }
+    });
+
+    it('should copy assets', async function() {
+        this.timeout(75000);
+        await config.copyAssets();
+    });
+
     it('should build site', async function() {
         this.timeout(25000);
         let failed = false;
@@ -232,6 +268,7 @@ describe('image to figure/image', function() {
         // However this piece of testing must happen here.
 
         assert.equal($('head meta[name="og:image"]').length, 1);
+        // console.log($('head meta[name="og:image"]').attr('content'))
         assert.include($('head meta[name="og:image"]').attr('content'), 
             "https://example.akashacms.com/img/Human-Skeleton.jpg");
     });
@@ -273,5 +310,16 @@ describe('opengraph promote images', function() {
         assert.equal($('body img#img-from-partial').length, 1);
         assert.equal($('head meta[content="https://example.akashacms.com/img-from-partial-ejs.jpg"]').length, 1);
         assert.equal($('body img#img-from-partial-ejs').length, 1);
+    });
+});
+
+describe('Finish', function() {
+    it('should close the configuration', async function() {
+        try {
+            await akasha.closeCaches();
+        } catch (e) {
+            console.error(e);
+            throw e;
+        }
     });
 });

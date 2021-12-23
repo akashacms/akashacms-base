@@ -5,10 +5,10 @@
   "main": "index.js",
   "scripts": {
     "test": "mocha ./index",
-    "setup": "npm install && cd .. && npm install && npm install akashacms/akasharender --no-save",
+    "setup": "npm install && cd .. && npm install && npm install akashacms/akasharender#watcher --no-save",
     "clean": "rm -rf node_modules out"
   },
-  "author": "",
+  "author": "David Herron <david@davidherron.com>",
   "license": "ISC",
   "dependencies": {
     "chai": "^4.1.2",
