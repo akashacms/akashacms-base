@@ -119,8 +119,9 @@ module.exports = class BasePlugin extends akasha.Plugin {
             return Promise.resolve("skipped");
         }
         var rendered_files = [];
-        const documents = (await akasha.filecache).documents.search(config, {
-            renderglob: '**/*.html'
+        const documents = (await akasha.filecache).documents.search({
+            renderpathmatch: '\.html$'
+            // renderglob: '**/*.html'
             // renderers: [ akasha.HTMLRenderer ]
         });
         
