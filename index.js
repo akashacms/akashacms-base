@@ -51,13 +51,13 @@ module.exports = class BasePlugin extends akasha.Plugin {
     get options() { return this[_plugin_options]; }
 
     doHeaderMetaSync(config, metadata) {
-        return akasha.partialSync(this.config,
+        return this.akasha.partialSync(this.config,
             "ak_headermeta.html.handlebars",
             fixHeaderMeta(metadata));
     }
 
     async doHeaderMeta(config, metadata) {
-        return akasha.partial(this.config,
+        return this.akasha.partial(this.config,
             "ak_headermeta.html.handlebars",
             fixHeaderMeta(metadata));
     }
@@ -103,9 +103,13 @@ module.exports = class BasePlugin extends akasha.Plugin {
         if (publicationDate) {
             // console.log(`doPublicationDate ${util.inspect(publicationDate)}`);
             let d = new Date(publicationDate);
-            return akasha.partialSync(this.config, "ak_publdate.html.njk", {
-                publicationDate: d.toDateString()
-            });
+            try {
+                return this.akasha.partialSync(this.config, "ak_publdate.html.njk", {
+                    publicationDate: d.toDateString()
+                });
+            } catch (err) {
+                throw new Error(`doPublicationDate failed ${this.akasha.partialSync} because ${err}`);
+            }
         } else return "";
     }
 
@@ -119,7 +123,7 @@ module.exports = class BasePlugin extends akasha.Plugin {
             return Promise.resolve("skipped");
         }
         var rendered_files = [];
-        const documents = (await akasha.filecache).documents.search({
+        const documents = (await this.akasha.filecache).documents.search({
             renderpathmatch: '\.html$'
             // renderglob: '**/*.html'
             // renderers: [ akasha.HTMLRenderer ]
@@ -234,7 +238,7 @@ var fixHeaderMeta = function(metadata) {
 class HeaderMetatagsElement extends mahabhuta.CustomElement {
     get elementName() { return "ak-header-metatags"; }
     process($element, metadata, dirty) {
-        return akasha.partial(this.array.options.config,
+        return this.array.options.config.akasha.partial(this.array.options.config,
                 "ak_headermeta.html.handlebars",
                 fixHeaderMeta(metadata));
     }
@@ -285,7 +289,7 @@ class TOCGroupElement extends mahabhuta.CustomElement {
                 : "";
 
         dirty();
-        return akasha.partial(this.array.options.config, template, {
+        return this.array.options.config.akasha.partial(this.array.options.config, template, {
             id, additionalClasses, suppressContents,
             content
         });
@@ -315,7 +319,7 @@ class TOCItemElement extends mahabhuta.CustomElement {
                 : "";
 
         dirty();
-        return akasha.partial(this.array.options.config, template, {
+        return this.array.options.config.akasha.partial(this.array.options.config, template, {
             id, additionalClasses, title, anchor,
             content
         });

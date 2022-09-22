@@ -30,7 +30,7 @@ describe('build site', function() {
     it('should successfully setup cache database', async function() {
         this.timeout(75000);
         try {
-            await akasha.cacheSetup(config);
+            await akasha.setup(config);
         } catch (e) {
             console.error(e);
             throw e;
@@ -40,18 +40,18 @@ describe('build site', function() {
     it('should successfully setup file caches', async function() {
         this.timeout(75000);
         try {
-            await Promise.all([
+            /* await Promise.all([
                 akasha.setupDocuments(config),
                 akasha.setupAssets(config),
                 akasha.setupLayouts(config),
                 akasha.setupPartials(config)
-            ])
-            await Promise.all([
+            ]) */
+            /* await Promise.all([
                 (await akasha.filecache).documents.isReady(),
                 (await akasha.filecache).assets.isReady(),
                 (await akasha.filecache).layouts.isReady(),
                 (await akasha.filecache).partials.isReady()
-            ]);
+            ]); */
         } catch (e) {
             console.error(e);
             throw e;
