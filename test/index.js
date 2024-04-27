@@ -8,7 +8,8 @@ const baseConfig = {
         { relationship: "foo", url: "http://foo.bar" },
         { relationship: "gronk", url: "http://gronk.bar" },
         { relationship: "them", url: "http://them.bar" }
-    ]
+    ],
+    generateSitemapFlag: true
 };
 
 const config = new akasha.Configuration();

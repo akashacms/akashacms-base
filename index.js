@@ -24,7 +24,10 @@ const util  = require('util');
 const url   = require('url');
 const akasha = require('akasharender');
 const mahabhuta = akasha.mahabhuta;
-const smap  = require('sightmap');
+const {
+    SitemapStream, streamToPromise, simpleSitemapAndIndex
+} = require('sitemap');
+const { Readable } = require('node:stream');
 
 const pluginName = "@akashacms/plugins-base";
 
@@ -92,7 +95,7 @@ module.exports = class BasePlugin extends akasha.Plugin {
         //     from somewhere.
         // http://microformats.org/wiki/rel-sitemap
         var href = undefined; // $element.attr("href");
-        if (!href) href = "/sitemap.xml";
+        if (!href) href = "/sitemap-index.xml";
         let $ = mahabhuta.parse('<link rel="sitemap" type="application/xml" title="" href="" />');
         $('link').attr('title', metadata.title);
         $('link').attr('href', href);
@@ -152,27 +155,21 @@ module.exports = class BasePlugin extends akasha.Plugin {
                 dd = dd.toString();
             }
 
-            var baseURL = url.parse(config.root_url);
+            const baseURL = new URL(config.root_url);
             baseURL.pathname = doc.renderpath;
 
             rendered_files.push({
-                loc: baseURL.format(),
+                url: baseURL.toLocaleString(), // doc.renderPath
+                changefreq: 'weekly',
                 priority: 0.5,
                 lastmod:  fDate.getUTCFullYear() +"-"+ mm +"-"+ dd
             })
         }
 
-        smap(rendered_files);
-        await new Promise((resolve, reject) => {
-            smap(function(xml) {
-                fs.writeFile(path.join(config.renderDestination, "sitemap.xml"), xml, 'utf8', function (err) {
-                    if (err) {
-                        reject(err);
-                    } else {
-                        resolve();
-                    }
-                });
-            });
+        await simpleSitemapAndIndex({
+            hostname: config.root_url,
+            destinationDir: config.renderDestination,
+            sourceData: rendered_files,
         });
 
         return "okay";
