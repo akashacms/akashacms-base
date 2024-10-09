@@ -11,9 +11,15 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>{{ title | escape }}</title>
-<ak-header-metatags></ak-header-metatags>
-<ak-header-linkreltags></ak-header-linkreltags>
-<ak-header-canonical-url></ak-header-canonical-url>
+{# <ak-header-metatags></ak-header-metatags> #}
+{% akheadermetatags %}
+{% endakheadermetatags %}
+{# <ak-header-linkreltags></ak-header-linkreltags> #}
+{% aklinkreltags %}
+{% endaklinkreltags %}
+{# <ak-header-canonical-url></ak-header-canonical-url> #}
+{% akcanonicalurl %}
+{% endakcanonicalurl %}
 <open-graph-promote-images root="article"></open-graph-promote-images>
 </head>
 <body>
@@ -21,6 +27,7 @@
 <h1>{{ title | escape }}</h1>
 
 <article>
+    {# <div>Date: {% akpublicationdate %}{% endakpublicationdate %} #}
     {{ content }}
 </article>
 

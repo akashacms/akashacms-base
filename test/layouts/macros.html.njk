@@ -11,9 +11,13 @@
 <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>{{ title | escape }}</title>
-{% import "ak_core_macros.njk" as ak_core with context %}
-{{ ak_core.stylesheets() }}
-{{ ak_core.headerJavaScript() }}
+{# {% import "ak_core_macros.njk" as ak_core with context %} #}
+{# {% akstylesheets %} #}
+{# {% endakstylesheets %} #}
+{# {% akheaderjs %} #}
+{# {% endakheaderjs %} #}
+{# {{ ak_core.stylesheets() }}
+{{ ak_core.headerJavaScript() }} #}
 
 {% import "ak_base_macros.njk" as ak_base with context %}
 {{ ak_base.headerMeta() }}
@@ -37,6 +41,9 @@
 </article>
 
 
-{{ ak_core.footerJavaScript() }}
+{# {{ ak_core.footerJavaScript() }} #}
+{# {% akfooterjs %} #}
+{# {% endakfooterjs %} #}
+
 </body>
 </html>

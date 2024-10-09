@@ -48,6 +48,21 @@ module.exports = class BasePlugin extends akasha.Plugin {
         config.addAssetsDir(path.join(__dirname, 'assets'));
         config.addMahabhuta(module.exports.mahabhutaArray(options));
         if (!options.linkRelTags) this[_plugin_options].linkRelTags = [];
+
+        const njk = this.config.findRendererName('.html.njk');
+        const env = njk.njkenv();
+        njk.njkenv().addExtension('akheadermetatags',
+            new headerMetatagsExtension(this.config, this, njk)
+        );
+        njk.njkenv().addExtension('aklinkreltags',
+            new linkRelTagsExtension(this.config, this, njk)
+        );
+        njk.njkenv().addExtension('akcanonicalurl',
+            new canonicalURLExtension(this.config, this, njk)
+        );
+        njk.njkenv().addExtension('akpublicationdate',
+            new publicationDateExtension(this.config, this, njk)
+        );
     }
 
     get config() { return this[_plugin_config]; }
@@ -241,6 +256,34 @@ class HeaderMetatagsElement extends mahabhuta.CustomElement {
     }
 }
 
+class headerMetatagsExtension {
+    constructor(config, plugin, njkRenderer) {
+        this.tags = [ 'akheadermetatags' ];
+        this.config = config;
+        this.plugin = plugin;
+        this.njkRenderer = njkRenderer;
+    }
+
+    parse(parser, nodes, lexer) {
+        // console.log(`in headerMetatagsExtension - parse`);
+        try {
+            var tok = parser.nextToken();
+            var args = parser.parseSignature(null, true);
+            parser.advanceAfterBlockEnd(tok.value);
+            var body = parser.parseUntilBlocks('endakheadermetatags');
+            parser.advanceAfterBlockEnd();
+            return new nodes.CallExtension(this, 'run', args, [body]);
+        } catch (err) {
+            console.error(`headerMetatagsExtension `, err.stack);
+        }
+    }
+
+    run(context, args, body) {
+        // console.log(`in headerMetatagsExtension - run`);
+        return this.plugin.doHeaderMetaSync(this.config, context.ctx);
+    };
+}
+
 function doLinkRelTag(config, lrtag) {
     return `<link rel="${lrtag.relationship}" href="${lrtag.url}" />`;
 }
@@ -253,12 +296,69 @@ class LinkRelTagsElement extends mahabhuta.CustomElement {
     }
 }
 
+class linkRelTagsExtension {
+    constructor(config, plugin, njkRenderer) {
+        this.tags = [ 'aklinkreltags' ];
+        this.config = config;
+        this.plugin = plugin;
+        this.njkRenderer = njkRenderer;
+    }
+
+    parse(parser, nodes, lexer) {
+        // console.log(`in linkRelTagsExtension - parse`);
+        try {
+            var tok = parser.nextToken();
+            var args = parser.parseSignature(null, true);
+            parser.advanceAfterBlockEnd(tok.value);
+            var body = parser.parseUntilBlocks('endaklinkreltags');
+            parser.advanceAfterBlockEnd();
+            return new nodes.CallExtension(this, 'run', args, [body]);
+        } catch (err) {
+            console.error(`linkRelTagsExtension `, err.stack);
+        }
+    }
+
+    run(context, args, body) {
+        // console.log(`in linkRelTagsExtension - run`);
+        return this.plugin.doLinkRelTags(context.ctx);
+    };
+}
+
 class CanonicalURLElement extends mahabhuta.CustomElement {
     get elementName() { return "ak-header-canonical-url"; }
     process($element, metadata, dirty) {
         return this.array.options.config.plugin(pluginName)
                     .doCanonicalURL(metadata.rendered_url);
     }
+}
+
+class canonicalURLExtension {
+    constructor(config, plugin, njkRenderer) {
+        this.tags = [ 'akcanonicalurl' ];
+        this.config = config;
+        this.plugin = plugin;
+        this.njkRenderer = njkRenderer;
+    }
+
+    parse(parser, nodes, lexer) {
+        // console.log(`in canonicalURLExtension - parse`);
+        try {
+            var tok = parser.nextToken();
+            var args = parser.parseSignature(null, true);
+            parser.advanceAfterBlockEnd(tok.value);
+            var body = parser.parseUntilBlocks('endakcanonicalurl');
+            parser.advanceAfterBlockEnd();
+            return new nodes.CallExtension(this, 'run', args, [body]);
+        } catch (err) {
+            console.error(`canonicalURLExtension `, err.stack);
+        }
+    }
+
+    run(context, args, body) {
+        // console.log(`in canonicalURLExtension - run ${util.inspect(context.ctx)} ${util.inspect(this.plugin)}`);
+        return this.plugin
+                    .doCanonicalURL(context.ctx.rendered_url);
+    };
 }
 
 class PublicationDateElement extends mahabhuta.CustomElement {
@@ -268,6 +368,35 @@ class PublicationDateElement extends mahabhuta.CustomElement {
         return this.array.options.config.plugin(pluginName)
                     .doPublicationDate(metadata.publicationDate);
     }
+}
+
+class publicationDateExtension {
+    constructor(config, plugin, njkRenderer) {
+        this.tags = [ 'akpublicationdate' ];
+        this.config = config;
+        this.plugin = plugin;
+        this.njkRenderer = njkRenderer;
+    }
+
+    parse(parser, nodes, lexer) {
+        // console.log(`in publicationDateExtension - parse`);
+        try {
+            var tok = parser.nextToken();
+            var args = parser.parseSignature(null, true);
+            parser.advanceAfterBlockEnd(tok.value);
+            var body = parser.parseUntilBlocks('endakpublicationdate');
+            parser.advanceAfterBlockEnd();
+            return new nodes.CallExtension(this, 'run', args, [body]);
+        } catch (err) {
+            console.error(`publicationDateExtension `, err.stack);
+        }
+    }
+
+    run(context, args, body) {
+        // console.log(`in publicationDateExtension - run`);
+        return this.plugin
+                    .doPublicationDate(context.ctx.publicationDate);
+    };
 }
 
 class TOCGroupElement extends mahabhuta.CustomElement {

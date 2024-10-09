@@ -58,6 +58,13 @@ The `<ak-header-metatags>` tag generates most of these tags using page metadata.
 
 This tag renders through the `ak_headermeta.html.njk` partial.  Consult that file for details.
 
+In Nunjucks templates we can do this:
+
+```html
+{% akheadermetatags %}
+{% endakheadermetatags %}
+```
+
 <h2 id="link-rel">Generating link rel= tags in header</h2>
 
 Header tags of the pattern `<link rel="..." href="..."/>` are used for many purposes.  AkashaCMS-Base supports simplified method to generate these tags.
@@ -86,11 +93,26 @@ akbaseLinkRelTags:
 ---
 ```
 
+In Nunjucks templates we can do this:
+
+```html
+{% aklinkreltags %}
+{% endaklinkreltags %}
+```
+
+
 <h2 id="canonical-url">Generate a canonical URL in header</h2>
 
 The `canonical` link tag defines the most correct official URL for the page.  It's used by search engines to disambiguate pages that might appear under multiple URL's.
 
-The `<ak-header-canonical-url>` tag generates this tag using the `ak_linkreltag.html.ejs` partial.  
+The `<ak-header-canonical-url>` tag generates this tag using the `ak_linkreltag.html.ejs` partial.
+
+In Nunjucks templates we can do this:
+
+```html
+{% akcanonicalurl %}
+{% endakcanonicalurl %}
+```
 
 <h2 id="mktoc">Generate a Table of Contents for a page</h2>
 
@@ -129,6 +151,13 @@ It's often desirable to show the publication date for a page.  It's often desira
 The page can include `publicationDate` in its metadata.  If missing, AkashaRender substitutes in the last modification date of the content file.
 
 The tag `<publication-date>` formats that date through the `ak_publdate.html.njk` partial.
+
+In Nunjucks templates we can do this:
+
+```html
+{% akpublicationdate %}
+{% endakpublicationdate %}
+```
 
 <h2 id="opengraph">Promote images with OpenGraph tags</h2>
 
