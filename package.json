@@ -28,8 +28,10 @@
     "url": "git://github.com/akashacms/akashacms-base.git"
   },
   "engines": {
-    "node": ">=12.2"
+    "node": ">=20.x"
   },
+  "main": "index.mjs",
+  "type": "module",
   "scripts": {
     "dopublish": "npm publish --access public"
   },

@@ -1,7 +1,9 @@
 
-const akasha   = require('akasharender');
-const plugin = require('../index');
-const { assert } = require('chai');
+import akasha from 'akasharender';
+import * as plugin from '../index.mjs';
+import { assert } from 'chai';
+
+const __dirname = import.meta.dirname;
 
 const baseConfig = {
     linkRelTags: [
@@ -18,7 +20,7 @@ config.configDir = __dirname;
 config.addLayoutsDir('layouts')
       .addPartialsDir('partials')
       .addDocumentsDir('documents');
-config.use(plugin, baseConfig);
+config.use(plugin.BasePlugin, baseConfig);
 config.setMahabhutaConfig({
     recognizeSelfClosing: true,
     recognizeCDATA: true,
@@ -156,6 +158,8 @@ describe('header meta', function() {
 describe('@akashacms/plugins-base doHeaderMetaSync doGoogleSitemap', function() {
     it('should call those functions w/o failure', async function() {
         let { html, $ } = await akasha.readRenderedFile(config, 'do-plugin-base-direct-calls.html');
+
+        // console.log(html);
 
         assert.exists(html, 'result exists');
         assert.isString(html, 'result isString');

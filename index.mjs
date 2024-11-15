@@ -17,24 +17,26 @@
  *  limitations under the License.
  */
 
-const fs    = require('fs');
-const fsp   = fs.promises;
-const path  = require('path');
-const util  = require('util');
-const url   = require('url');
-const akasha = require('akasharender');
+import fs from 'node:fs';
+import { promises as fsp } from 'node:fs';
+import path from 'node:path';
+import util from 'node:util';
+import url from 'node:url';
+import akasha from 'akasharender';
 const mahabhuta = akasha.mahabhuta;
-const {
+import {
     SitemapStream, streamToPromise, simpleSitemapAndIndex
-} = require('sitemap');
-const { Readable } = require('node:stream');
+} from 'sitemap';
+import { Readable } from 'node:stream';
+
+const __dirname = import.meta.dirname;
 
 const pluginName = "@akashacms/plugins-base";
 
 const _plugin_config = Symbol('config');
 const _plugin_options = Symbol('options');
 
-module.exports = class BasePlugin extends akasha.Plugin {
+export class BasePlugin extends akasha.Plugin {
     constructor() {
         super(pluginName);
     }
@@ -46,7 +48,7 @@ module.exports = class BasePlugin extends akasha.Plugin {
         config.addPartialsDir(path.join(__dirname, 'partials'));
         config.addLayoutsDir(path.join(__dirname, 'layouts'));
         config.addAssetsDir(path.join(__dirname, 'assets'));
-        config.addMahabhuta(module.exports.mahabhutaArray(options));
+        config.addMahabhuta(mahabhutaArray(options));
         if (!options.linkRelTags) this[_plugin_options].linkRelTags = [];
 
         const njk = this.config.findRendererName('.html.njk');
@@ -141,7 +143,7 @@ module.exports = class BasePlugin extends akasha.Plugin {
             return Promise.resolve("skipped");
         }
         var rendered_files = [];
-        const documents = (await this.akasha.filecache).documents.search({
+        const documents = await this.akasha.filecache.documentsCache.search({
             renderpathmatch: '\.html$'
             // renderglob: '**/*.html'
             // renderers: [ akasha.HTMLRenderer ]
@@ -191,7 +193,7 @@ module.exports = class BasePlugin extends akasha.Plugin {
     }
 }
 
-module.exports.mahabhutaArray = function(options) {
+export const mahabhutaArray = function(options) {
     let ret = new mahabhuta.MahafuncArray(pluginName, options);
     ret.addMahafunc(new HeaderMetatagsElement());
     ret.addMahafunc(new LinkRelTagsElement());
