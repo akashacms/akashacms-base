@@ -72,13 +72,13 @@ export class BasePlugin extends akasha.Plugin {
 
     doHeaderMetaSync(config, metadata) {
         return this.akasha.partialSync(this.config,
-            "ak_headermeta.html.handlebars",
+            "ak_headermeta.html.njk",
             fixHeaderMeta(metadata));
     }
 
     async doHeaderMeta(config, metadata) {
         return this.akasha.partial(this.config,
-            "ak_headermeta.html.handlebars",
+            "ak_headermeta.html.njk",
             fixHeaderMeta(metadata));
     }
 
@@ -198,13 +198,6 @@ export const mahabhutaArray = function(options) {
     ret.addMahafunc(new HeaderMetatagsElement());
     ret.addMahafunc(new LinkRelTagsElement());
     ret.addMahafunc(new CanonicalURLElement());
-    ret.addMahafunc(
-        function($, metadata, dirty, done) {
-            var elements = [];
-            $('ak-siteverification').each((i, elem) => { elements.push(elem); });
-            if (elements.length <= 0) return done();
-            return done(new Error("ak-siteverification deprecated, use site-verification instead"));
-        });
     ret.addMahafunc(new PublicationDateElement());
     ret.addMahafunc(new TOCGroupElement());
     ret.addMahafunc(new TOCItemElement());
@@ -434,6 +427,9 @@ class TOCItemElement extends mahabhuta.CustomElement {
         const additionalClasses = $element.attr('additional-classes')
                 ? $element.attr('additional-classes')
                 : "";
+        const textClasses = $element.attr('text-classes')
+                ? $element.attr('text-classes')
+                : "";
         const title = $element.attr('title');
         if (!title || title === '') {
             throw new Error(`toc-item requires an title value`);
@@ -448,7 +444,7 @@ class TOCItemElement extends mahabhuta.CustomElement {
 
         dirty();
         return this.array.options.config.akasha.partial(this.array.options.config, template, {
-            id, additionalClasses, title, anchor,
+            id, additionalClasses, textClasses, title, anchor,
             content
         });
     }

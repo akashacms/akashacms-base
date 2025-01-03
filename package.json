@@ -1,6 +1,6 @@
 {
   "name": "@akashacms/plugins-base",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "author": {
     "name": "David Herron",
     "email": "david@davidherron.com",
@@ -36,6 +36,6 @@
     "dopublish": "npm publish --access public"
   },
   "dependencies": {
-    "sitemap": "^7.1.1"
+    "sitemap": "^8.x"
   }
 }

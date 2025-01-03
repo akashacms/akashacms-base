@@ -6,21 +6,22 @@ title: AskashaCMS "base" plugin documentation - Foundational support for website
 The `@akashacms/plugins-base` plugin provides foundation-level support for building websites.  This includes useful partials, and a long list of Mahabhuta tags.  They work together to provide a comprehensive base for presenting website content.  
 
 <toc-group>
-<toc-item anchor="#install" title="Installation"></toc-item>
-<toc-item anchor="#config" title="Configuration"></toc-item>
-<toc-item anchor="#custom-tags" title="Custom tags">
+<toc-item anchor="#install" title="Installation" additional-classes="bg-light" text-classes="text-dark"></toc-item>
+<toc-item anchor="#config" title="Configuration" additional-classes="bg-light" text-classes="text-dark"></toc-item>
+<toc-item anchor="#custom-tags" title="Custom tags" additional-classes="bg-light" text-classes="text-dark">
     <toc-group>
-    <toc-item anchor="#metadata" title="Metadata in page header"></toc-item>
-    <toc-item anchor="#link-rel" title="Generating link rel= tags in header"></toc-item>
-    <toc-item anchor="#canonical-url" title="Generate a canonical URL in header"></toc-item>
-    <toc-item anchor="#mktoc" title="Generate a Table of Contents for a page"></toc-item>
-    <toc-item anchor="#publdate" title="Show the Publication Date on the page"></toc-item>
-    <toc-item anchor="#opengraph" title="Promote images with OpenGraph tags"></toc-item>
-    <toc-item anchor="#opengraph-single" title="Promoting a single image for OpenGraph"></toc-item>
+    <toc-item anchor="#metadata" title="Metadata in page header" additional-classes="bg-light" text-classes="text-dark"></toc-item>
+    <toc-item anchor="#link-rel" title="Generating link rel= tags in header" additional-classes="bg-light" text-classes="text-dark"></toc-item>
+    <toc-item anchor="#canonical-url" title="Generate a canonical URL in header" additional-classes="bg-light" text-classes="text-dark"></toc-item>
+    <toc-item anchor="#mktoc" title="Generate a Table of Contents for a page" additional-classes="bg-light" text-classes="text-dark"></toc-item>
+    <toc-item anchor="#publdate" title="Show the Publication Date on the page" additional-classes="bg-light" text-classes="text-dark"></toc-item>
+    <toc-item anchor="#opengraph" title="Promote images with OpenGraph tags" additional-classes="bg-light" text-classes="text-dark"></toc-item>
+    <toc-item anchor="#opengraph-single" title="Promoting a single image for OpenGraph" additional-classes="bg-light" text-classes="text-dark"></toc-item>
     </toc-group>
 </toc-item>
-<toc-item anchor="#sitemaps" title="XML Sitemaps"></toc-item>
+<toc-item anchor="#sitemaps" title="XML Sitemaps" additional-classes="bg-light" text-classes="text-dark"></toc-item>
 </toc-group>
+
 
 <h1 id="install">Installation</h1>
 
@@ -29,12 +30,18 @@ With an AkashaCMS website setup, add the following to `package.json`
 ```
   "dependencies": {
     ...
-    "@akashacms/plugins-base": "0.7.6",
+    "@akashacms/plugins-base": "^0.9.x",
     ...
   }
 ```
 
-Once added to `package.json` run: `npm install`
+This version number matches that of AkashaRender.
+
+Once added to `package.json` run:
+
+```shell
+$ npm install
+```
 
 <h1 id="config">Configuration</h1>
 
@@ -54,9 +61,13 @@ The `generateSitemapFlag` flag causes an XML Sitemap to be generated in the file
 
 There's a lot of metadata, Open Graph etc, that can be put into the `<head>` section.  These tags are useful for customizing the presentation in search engines or on social media websites.
 
-The `<ak-header-metatags>` tag generates most of these tags using page metadata.
+The `<ak-header-metatags>` tag generates most of these tags using page metadata.  This tag renders the `ak_headermeta.html.njk` partial.  Consult that file for details.
 
-This tag renders through the `ak_headermeta.html.njk` partial.  Consult that file for details.
+One method for avoiding using the custom tag is to directly invoke the `partial` function.  In an EJS template
+
+```html
+<%- partialSync('ak_headermeta.html.njk') %>
+```
 
 In Nunjucks templates we can do this:
 
@@ -100,6 +111,13 @@ In Nunjucks templates we can do this:
 {% endaklinkreltags %}
 ```
 
+From the EJS template engine do this:
+
+```html
+<%- config.plugin("@akashacms/plugins-base").doLinkRelTags() %>
+```
+
+The other template engines have a different syntax for invoking this function.
 
 <h2 id="canonical-url">Generate a canonical URL in header</h2>
 
@@ -112,6 +130,12 @@ In Nunjucks templates we can do this:
 ```html
 {% akcanonicalurl %}
 {% endakcanonicalurl %}
+```
+
+In an EJS template
+
+```html
+<%- partialSync('ak_linkreltag.html.ejs') %>
 ```
 
 <h2 id="mktoc">Generate a Table of Contents for a page</h2>
@@ -129,6 +153,7 @@ This element is expected to contain `<toc-item>` elements that will be the links
 * `template` for an alternative to the standard template (`ak_toc_group_element.html.njk`)
 * `id` for the ID of the `toc-group`
 * `additional-classes` for additional class declarations to add to the `class` attribute
+* `text-classes` supports adding class names to the `class` attribute of the `<a>` tag
 * `title` for the anchor text in the generated link
 * `anchor` for the href to use in the generated link
 
@@ -157,6 +182,12 @@ In Nunjucks templates we can do this:
 ```html
 {% akpublicationdate %}
 {% endakpublicationdate %}
+```
+
+In an EJS template
+
+```html
+<%- partialSync('ak_publdate.html.njk') %>
 ```
 
 <h2 id="opengraph">Promote images with OpenGraph tags</h2>
