@@ -28,7 +28,7 @@
     "url": "git://github.com/akashacms/akashacms-base.git"
   },
   "engines": {
-    "node": ">=20.x"
+    "node": ">=24.x"
   },
   "main": "index.mjs",
   "type": "module",

@@ -1,6 +1,6 @@
 /**
  *
- * Copyright 2014-2019 David Herron
+ * Copyright 2014-2025 David Herron
  *
  * This file is part of AkashaCMS (http://akashacms.com/).
  *
@@ -22,7 +22,9 @@ import { promises as fsp } from 'node:fs';
 import path from 'node:path';
 import util from 'node:util';
 import url from 'node:url';
-import akasha from 'akasharender';
+import akasha, {
+    Configuration, CustomElement, Munger, PageProcessor
+} from 'akasharender';
 const mahabhuta = akasha.mahabhuta;
 import {
     SitemapStream, streamToPromise, simpleSitemapAndIndex
@@ -33,22 +35,24 @@ const __dirname = import.meta.dirname;
 
 const pluginName = "@akashacms/plugins-base";
 
-const _plugin_config = Symbol('config');
-const _plugin_options = Symbol('options');
 
 export class BasePlugin extends akasha.Plugin {
+
+    #config;
+
     constructor() {
         super(pluginName);
     }
 
     configure(config, options) {
-        this[_plugin_config] = config;
-        this[_plugin_options] = options;
-        options.config = config;
+        this.#config = config;
+        this.akasha = config.akasha;
+        this.options = options ? options : {};
+        this.options.config = config;
         config.addPartialsDir(path.join(__dirname, 'partials'));
         config.addLayoutsDir(path.join(__dirname, 'layouts'));
         config.addAssetsDir(path.join(__dirname, 'assets'));
-        config.addMahabhuta(mahabhutaArray(options));
+        config.addMahabhuta(mahabhutaArray(options, config, akasha, this));
         if (!options.linkRelTags) this[_plugin_options].linkRelTags = [];
 
         const njk = this.config.findRendererName('.html.njk');
@@ -67,8 +71,7 @@ export class BasePlugin extends akasha.Plugin {
         );
     }
 
-    get config() { return this[_plugin_config]; }
-    get options() { return this[_plugin_options]; }
+    get config() { return this.#config; }
 
     doHeaderMetaSync(config, metadata) {
         return this.akasha.partialSync(this.config,
@@ -193,15 +196,20 @@ export class BasePlugin extends akasha.Plugin {
     }
 }
 
-export const mahabhutaArray = function(options) {
+export const mahabhutaArray = function(
+            options,
+            config, // ?: Configuration,
+            akasha, // ?: any,
+            plugin  // ?: Plugin
+) {
     let ret = new mahabhuta.MahafuncArray(pluginName, options);
-    ret.addMahafunc(new HeaderMetatagsElement());
-    ret.addMahafunc(new LinkRelTagsElement());
-    ret.addMahafunc(new CanonicalURLElement());
-    ret.addMahafunc(new PublicationDateElement());
-    ret.addMahafunc(new TOCGroupElement());
-    ret.addMahafunc(new TOCItemElement());
-    ret.addMahafunc(new OpenGraphPromoteImages());
+    ret.addMahafunc(new HeaderMetatagsElement(config, akasha, plugin));
+    ret.addMahafunc(new LinkRelTagsElement(config, akasha, plugin));
+    ret.addMahafunc(new CanonicalURLElement(config, akasha, plugin));
+    ret.addMahafunc(new PublicationDateElement(config, akasha, plugin));
+    ret.addMahafunc(new TOCGroupElement(config, akasha, plugin));
+    ret.addMahafunc(new TOCItemElement(config, akasha, plugin));
+    ret.addMahafunc(new OpenGraphPromoteImages(config, akasha, plugin));
     return ret;
 };
 
@@ -242,10 +250,10 @@ var fixHeaderMeta = function(metadata) {
     return data;
 };
 
-class HeaderMetatagsElement extends mahabhuta.CustomElement {
+class HeaderMetatagsElement extends CustomElement {
     get elementName() { return "ak-header-metatags"; }
     process($element, metadata, dirty) {
-        return this.array.options.config.akasha.partial(this.array.options.config,
+        return this.akasha.partial(this.config,
                 "ak_headermeta.html.handlebars",
                 fixHeaderMeta(metadata));
     }
@@ -283,10 +291,10 @@ function doLinkRelTag(config, lrtag) {
     return `<link rel="${lrtag.relationship}" href="${lrtag.url}" />`;
 }
 
-class LinkRelTagsElement extends mahabhuta.CustomElement {
+class LinkRelTagsElement extends CustomElement {
     get elementName() { return "ak-header-linkreltags"; }
     process($element, metadata, dirty) {
-        return this.array.options.config.plugin(pluginName)
+        return this.config.plugin(pluginName)
                     .doLinkRelTags();
     }
 }
@@ -319,10 +327,10 @@ class linkRelTagsExtension {
     };
 }
 
-class CanonicalURLElement extends mahabhuta.CustomElement {
+class CanonicalURLElement extends CustomElement {
     get elementName() { return "ak-header-canonical-url"; }
     process($element, metadata, dirty) {
-        return this.array.options.config.plugin(pluginName)
+        return this.config.plugin(pluginName)
                     .doCanonicalURL(metadata.rendered_url);
     }
 }
@@ -356,11 +364,11 @@ class canonicalURLExtension {
     };
 }
 
-class PublicationDateElement extends mahabhuta.CustomElement {
+class PublicationDateElement extends CustomElement {
     get elementName() { return "publication-date"; }
     async process($element, metadata, dirty) {
         // console.log(`PublicationDateElement ${util.inspect(metadata.publicationDate)}`);
-        return this.array.options.config.plugin(pluginName)
+        return this.config.plugin(pluginName)
                     .doPublicationDate(metadata.publicationDate);
     }
 }
@@ -394,7 +402,7 @@ class publicationDateExtension {
     };
 }
 
-class TOCGroupElement extends mahabhuta.CustomElement {
+class TOCGroupElement extends CustomElement {
     get elementName() { return "toc-group"; }
     async process($element, metadata, dirty) {
         const template = $element.attr('template') 
@@ -410,14 +418,14 @@ class TOCGroupElement extends mahabhuta.CustomElement {
                 : "";
 
         dirty();
-        return this.array.options.config.akasha.partial(this.array.options.config, template, {
+        return this.akasha.partial(this.config, template, {
             id, additionalClasses, suppressContents,
             content
         });
     }
 }
 
-class TOCItemElement extends mahabhuta.CustomElement {
+class TOCItemElement extends CustomElement {
     get elementName() { return "toc-item"; }
     async process($element, metadata, dirty) {
         const template = $element.attr('template') 
@@ -443,14 +451,14 @@ class TOCItemElement extends mahabhuta.CustomElement {
                 : "";
 
         dirty();
-        return this.array.options.config.akasha.partial(this.array.options.config, template, {
+        return this.akasha.partial(this.config, template, {
             id, additionalClasses, textClasses, title, anchor,
             content
         });
     }
 }
 
-class OpenGraphPromoteImages extends mahabhuta.Munger {
+class OpenGraphPromoteImages extends Munger {
     get selector() { return "html head open-graph-promote-images"; }
     get elementName() { return 'html head open-graph-promote-images'; }
 
@@ -491,27 +499,76 @@ class OpenGraphPromoteImages extends mahabhuta.Munger {
                     // Ignore these images
             } else {
                 if (href && href.length > 0) {
-                    let pHref = url.parse(href);
+                    // console.log(`OpenGraphPromoteImages ${href}`);
+
+                    // Because we'll often receive a local URL relative
+                    // to the local directory, new URL(href) would throw
+                    // an error.  Adding a bogus baseURL ensures that
+                    // new URL will not crash.  The behavior in such
+                    // a case is like this:
+                    //
+                    // > new URL('img/Human-Skeleton.jpg', 'http://noturl')
+                    // URL {
+                    //   href: 'http://noturl/img/Human-Skeleton.jpg',
+                    //   origin: 'http://noturl',
+                    //   protocol: 'http:',
+                    //   username: '',
+                    //   password: '',
+                    //   host: 'noturl',
+                    //   hostname: 'noturl',
+                    //   port: '',
+                    //   pathname: '/img/Human-Skeleton.jpg',
+                    //   search: '',
+                    //   searchParams: URLSearchParams {},
+                    //   hash: ''
+                    // }
+                    //
+                    // In other words, the `origin` field contains the
+                    // supplied bogus URL.
+                    //
+                    // For this, I decided to make the bogus URL be
+                    // a subdomain of example.com because I know example.com
+                    // will never show up as a legit URL.
+
+                    let uHref = new URL(href, 'http://noturl.example.com');
+                    
                     // In case this is a site-relative URL, fix it up
-                    // to have the full URL.
-                    if (! pHref.host) {
-                        if (pHref.path.match(/^\//)) {
-                            href = this.array.options.config.root_url + href;
+                    // to have the full URL.  As said above, a site-relative
+                    // URL has the bogus URL chosen immediately above.
+                    if (uHref.origin === 'http://noturl.example.com') {
+
+                        // The next detail is that in this case uHref.pathname
+                        // won't accurately reflect the value of href, as can
+                        // be seen above.  The relative url beginning with `img/`
+                        // becomes an absolute pathname beginning with `/ihg/`.
+                        // Therefore to determine if it's a relative URL we
+                        // must check the original string to see if it started
+                        // with a slash.
+                        if (Array.isArray(href.match(/^\//))) {
+                            // console.log(`OpenGraphPromoteImages ${this.config.root_url} ${href} ${util.inspect(uHref)} ${util.inspect(href.match(/^\//))}`);
+
+                            // In case root_url does not end with a '/' we instead
+                            // parse root_url, make href the pathname, then
+                            // format that as a URL.
+                            const pRoot = new URL(this.config.root_url);
+                            pRoot.pathname = href;
+                            href = pRoot.toString();
                         } else {
                             let dirRender = path.dirname(metadata.document.renderTo);
-                            let pRootUrl = url.parse(this.array.options.config.root_url);
+                            let uRootUrl = new URL(this.config.root_url);
+
                             // This is an image relative to
                             // the document.  If the document is
                             // in the root directory, then we must not
                             // prepend the document's directory to
                             // the image href.
-                            pRootUrl.pathname =
+                            uRootUrl.pathname =
                               (dirRender !== "/" && dirRender !== '.')
                                     ? dirRender +'/'+ href
                                     : href;
                             // console.log(pRootUrl);
-                            // console.log(`in ${metadata.document.renderTo} dirRender ${dirRender} href ${href} `, pRootUrl);
-                            href = url.format(pRootUrl);
+                            // console.log(`in ${metadata.document.renderTo} dirRender ${dirRender} href ${href} `, uRootUrl);
+                            href = uRootUrl.toString();
                         }
                     }
                 }
@@ -546,7 +603,7 @@ class OpenGraphPromoteImages extends mahabhuta.Munger {
         //
         // To see this add console.log($.html()) to the top to see the HTML
         // being processed by this Mahafunc.
-        
+
         if (imgcount > 0) $link.remove();
     }
 }
