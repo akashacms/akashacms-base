@@ -53,7 +53,7 @@ export class BasePlugin extends akasha.Plugin {
         config.addLayoutsDir(path.join(__dirname, 'layouts'));
         config.addAssetsDir(path.join(__dirname, 'assets'));
         config.addMahabhuta(mahabhutaArray(options, config, akasha, this));
-        if (!options.linkRelTags) this[_plugin_options].linkRelTags = [];
+        if (!options.linkRelTags) this.options.linkRelTags = [];
 
         const njk = this.config.findRendererName('.html.njk');
         const env = njk.njkenv();
