@@ -1,6 +1,6 @@
 /**
  *
- * Copyright 2014-2019 David Herron
+ * Copyright 2014-2025 David Herron
  *
  * This file is part of AkashaCMS (http://akashacms.com/).
  *
@@ -17,48 +17,71 @@
  *  limitations under the License.
  */
 
-const fs    = require('fs');
-const fsp   = fs.promises;
-const path  = require('path');
-const util  = require('util');
-const url   = require('url');
-const akasha = require('akasharender');
+import fs from 'node:fs';
+import { promises as fsp } from 'node:fs';
+import path from 'node:path';
+import util from 'node:util';
+import url from 'node:url';
+import akasha, {
+    Configuration, CustomElement, Munger, PageProcessor
+} from 'akasharender';
 const mahabhuta = akasha.mahabhuta;
-const smap  = require('sightmap');
+import {
+    SitemapStream, streamToPromise, simpleSitemapAndIndex
+} from 'sitemap';
+import { Readable } from 'node:stream';
+
+const __dirname = import.meta.dirname;
 
 const pluginName = "@akashacms/plugins-base";
 
-const _plugin_config = Symbol('config');
-const _plugin_options = Symbol('options');
 
-module.exports = class BasePlugin extends akasha.Plugin {
+export class BasePlugin extends akasha.Plugin {
+
+    #config;
+
     constructor() {
         super(pluginName);
     }
 
     configure(config, options) {
-        this[_plugin_config] = config;
-        this[_plugin_options] = options;
-        options.config = config;
+        this.#config = config;
+        this.akasha = config.akasha;
+        this.options = options ? options : {};
+        this.options.config = config;
         config.addPartialsDir(path.join(__dirname, 'partials'));
         config.addLayoutsDir(path.join(__dirname, 'layouts'));
         config.addAssetsDir(path.join(__dirname, 'assets'));
-        config.addMahabhuta(module.exports.mahabhutaArray(options));
-        if (!options.linkRelTags) this[_plugin_options].linkRelTags = [];
+        config.addMahabhuta(mahabhutaArray(options, config, akasha, this));
+        if (!options.linkRelTags) this.options.linkRelTags = [];
+
+        const njk = this.config.findRendererName('.html.njk');
+        const env = njk.njkenv();
+        njk.njkenv().addExtension('akheadermetatags',
+            new headerMetatagsExtension(this.config, this, njk)
+        );
+        njk.njkenv().addExtension('aklinkreltags',
+            new linkRelTagsExtension(this.config, this, njk)
+        );
+        njk.njkenv().addExtension('akcanonicalurl',
+            new canonicalURLExtension(this.config, this, njk)
+        );
+        njk.njkenv().addExtension('akpublicationdate',
+            new publicationDateExtension(this.config, this, njk)
+        );
     }
 
-    get config() { return this[_plugin_config]; }
-    get options() { return this[_plugin_options]; }
+    get config() { return this.#config; }
 
     doHeaderMetaSync(config, metadata) {
-        return akasha.partialSync(this.config,
-            "ak_headermeta.html.handlebars",
+        return this.akasha.partialSync(this.config,
+            "ak_headermeta.html.njk",
             fixHeaderMeta(metadata));
     }
 
     async doHeaderMeta(config, metadata) {
-        return akasha.partial(this.config,
-            "ak_headermeta.html.handlebars",
+        return this.akasha.partial(this.config,
+            "ak_headermeta.html.njk",
             fixHeaderMeta(metadata));
     }
 
@@ -92,7 +115,7 @@ module.exports = class BasePlugin extends akasha.Plugin {
         //     from somewhere.
         // http://microformats.org/wiki/rel-sitemap
         var href = undefined; // $element.attr("href");
-        if (!href) href = "/sitemap.xml";
+        if (!href) href = "/sitemap-index.xml";
         let $ = mahabhuta.parse('<link rel="sitemap" type="application/xml" title="" href="" />');
         $('link').attr('title', metadata.title);
         $('link').attr('href', href);
@@ -103,9 +126,13 @@ module.exports = class BasePlugin extends akasha.Plugin {
         if (publicationDate) {
             // console.log(`doPublicationDate ${util.inspect(publicationDate)}`);
             let d = new Date(publicationDate);
-            return akasha.partialSync(this.config, "ak_publdate.html.njk", {
-                publicationDate: d.toDateString()
-            });
+            try {
+                return this.akasha.partialSync(this.config, "ak_publdate.html.njk", {
+                    publicationDate: d.toDateString()
+                });
+            } catch (err) {
+                throw new Error(`doPublicationDate failed ${this.akasha.partialSync} because ${err}`);
+            }
         } else return "";
     }
 
@@ -119,8 +146,9 @@ module.exports = class BasePlugin extends akasha.Plugin {
             return Promise.resolve("skipped");
         }
         var rendered_files = [];
-        const documents = (await akasha.filecache).documents.search(config, {
-            renderglob: '**/*.html'
+        const documents = await this.akasha.filecache.documentsCache.search({
+            renderpathmatch: '\.html$'
+            // renderglob: '**/*.html'
             // renderers: [ akasha.HTMLRenderer ]
         });
         
@@ -147,49 +175,41 @@ module.exports = class BasePlugin extends akasha.Plugin {
                 dd = dd.toString();
             }
 
-            var baseURL = url.parse(config.root_url);
+            const baseURL = new URL(config.root_url);
             baseURL.pathname = doc.renderpath;
 
             rendered_files.push({
-                loc: baseURL.format(),
+                url: baseURL.toLocaleString(), // doc.renderPath
+                changefreq: 'weekly',
                 priority: 0.5,
                 lastmod:  fDate.getUTCFullYear() +"-"+ mm +"-"+ dd
             })
         }
 
-        smap(rendered_files);
-        await new Promise((resolve, reject) => {
-            smap(function(xml) {
-                fs.writeFile(path.join(config.renderDestination, "sitemap.xml"), xml, 'utf8', function (err) {
-                    if (err) {
-                        reject(err);
-                    } else {
-                        resolve();
-                    }
-                });
-            });
+        await simpleSitemapAndIndex({
+            hostname: config.root_url,
+            destinationDir: config.renderDestination,
+            sourceData: rendered_files,
         });
 
         return "okay";
     }
 }
 
-module.exports.mahabhutaArray = function(options) {
+export const mahabhutaArray = function(
+            options,
+            config, // ?: Configuration,
+            akasha, // ?: any,
+            plugin  // ?: Plugin
+) {
     let ret = new mahabhuta.MahafuncArray(pluginName, options);
-    ret.addMahafunc(new HeaderMetatagsElement());
-    ret.addMahafunc(new LinkRelTagsElement());
-    ret.addMahafunc(new CanonicalURLElement());
-    ret.addMahafunc(
-        function($, metadata, dirty, done) {
-            var elements = [];
-            $('ak-siteverification').each((i, elem) => { elements.push(elem); });
-            if (elements.length <= 0) return done();
-            return done(new Error("ak-siteverification deprecated, use site-verification instead"));
-        });
-    ret.addMahafunc(new PublicationDateElement());
-    ret.addMahafunc(new TOCGroupElement());
-    ret.addMahafunc(new TOCItemElement());
-    ret.addMahafunc(new OpenGraphPromoteImages());
+    ret.addMahafunc(new HeaderMetatagsElement(config, akasha, plugin));
+    ret.addMahafunc(new LinkRelTagsElement(config, akasha, plugin));
+    ret.addMahafunc(new CanonicalURLElement(config, akasha, plugin));
+    ret.addMahafunc(new PublicationDateElement(config, akasha, plugin));
+    ret.addMahafunc(new TOCGroupElement(config, akasha, plugin));
+    ret.addMahafunc(new TOCItemElement(config, akasha, plugin));
+    ret.addMahafunc(new OpenGraphPromoteImages(config, akasha, plugin));
     return ret;
 };
 
@@ -230,45 +250,159 @@ var fixHeaderMeta = function(metadata) {
     return data;
 };
 
-class HeaderMetatagsElement extends mahabhuta.CustomElement {
+class HeaderMetatagsElement extends CustomElement {
     get elementName() { return "ak-header-metatags"; }
     process($element, metadata, dirty) {
-        return akasha.partial(this.array.options.config,
+        return this.akasha.partial(this.config,
                 "ak_headermeta.html.handlebars",
                 fixHeaderMeta(metadata));
     }
+}
+
+class headerMetatagsExtension {
+    constructor(config, plugin, njkRenderer) {
+        this.tags = [ 'akheadermetatags' ];
+        this.config = config;
+        this.plugin = plugin;
+        this.njkRenderer = njkRenderer;
+    }
+
+    parse(parser, nodes, lexer) {
+        // console.log(`in headerMetatagsExtension - parse`);
+        try {
+            var tok = parser.nextToken();
+            var args = parser.parseSignature(null, true);
+            parser.advanceAfterBlockEnd(tok.value);
+            var body = parser.parseUntilBlocks('endakheadermetatags');
+            parser.advanceAfterBlockEnd();
+            return new nodes.CallExtension(this, 'run', args, [body]);
+        } catch (err) {
+            console.error(`headerMetatagsExtension `, err.stack);
+        }
+    }
+
+    run(context, args, body) {
+        // console.log(`in headerMetatagsExtension - run`);
+        return this.plugin.doHeaderMetaSync(this.config, context.ctx);
+    };
 }
 
 function doLinkRelTag(config, lrtag) {
     return `<link rel="${lrtag.relationship}" href="${lrtag.url}" />`;
 }
 
-class LinkRelTagsElement extends mahabhuta.CustomElement {
+class LinkRelTagsElement extends CustomElement {
     get elementName() { return "ak-header-linkreltags"; }
     process($element, metadata, dirty) {
-        return this.array.options.config.plugin(pluginName)
+        return this.config.plugin(pluginName)
                     .doLinkRelTags();
     }
 }
 
-class CanonicalURLElement extends mahabhuta.CustomElement {
+class linkRelTagsExtension {
+    constructor(config, plugin, njkRenderer) {
+        this.tags = [ 'aklinkreltags' ];
+        this.config = config;
+        this.plugin = plugin;
+        this.njkRenderer = njkRenderer;
+    }
+
+    parse(parser, nodes, lexer) {
+        // console.log(`in linkRelTagsExtension - parse`);
+        try {
+            var tok = parser.nextToken();
+            var args = parser.parseSignature(null, true);
+            parser.advanceAfterBlockEnd(tok.value);
+            var body = parser.parseUntilBlocks('endaklinkreltags');
+            parser.advanceAfterBlockEnd();
+            return new nodes.CallExtension(this, 'run', args, [body]);
+        } catch (err) {
+            console.error(`linkRelTagsExtension `, err.stack);
+        }
+    }
+
+    run(context, args, body) {
+        // console.log(`in linkRelTagsExtension - run`);
+        return this.plugin.doLinkRelTags(context.ctx);
+    };
+}
+
+class CanonicalURLElement extends CustomElement {
     get elementName() { return "ak-header-canonical-url"; }
     process($element, metadata, dirty) {
-        return this.array.options.config.plugin(pluginName)
+        return this.config.plugin(pluginName)
                     .doCanonicalURL(metadata.rendered_url);
     }
 }
 
-class PublicationDateElement extends mahabhuta.CustomElement {
+class canonicalURLExtension {
+    constructor(config, plugin, njkRenderer) {
+        this.tags = [ 'akcanonicalurl' ];
+        this.config = config;
+        this.plugin = plugin;
+        this.njkRenderer = njkRenderer;
+    }
+
+    parse(parser, nodes, lexer) {
+        // console.log(`in canonicalURLExtension - parse`);
+        try {
+            var tok = parser.nextToken();
+            var args = parser.parseSignature(null, true);
+            parser.advanceAfterBlockEnd(tok.value);
+            var body = parser.parseUntilBlocks('endakcanonicalurl');
+            parser.advanceAfterBlockEnd();
+            return new nodes.CallExtension(this, 'run', args, [body]);
+        } catch (err) {
+            console.error(`canonicalURLExtension `, err.stack);
+        }
+    }
+
+    run(context, args, body) {
+        // console.log(`in canonicalURLExtension - run ${util.inspect(context.ctx)} ${util.inspect(this.plugin)}`);
+        return this.plugin
+                    .doCanonicalURL(context.ctx.rendered_url);
+    };
+}
+
+class PublicationDateElement extends CustomElement {
     get elementName() { return "publication-date"; }
     async process($element, metadata, dirty) {
         // console.log(`PublicationDateElement ${util.inspect(metadata.publicationDate)}`);
-        return this.array.options.config.plugin(pluginName)
+        return this.config.plugin(pluginName)
                     .doPublicationDate(metadata.publicationDate);
     }
 }
 
-class TOCGroupElement extends mahabhuta.CustomElement {
+class publicationDateExtension {
+    constructor(config, plugin, njkRenderer) {
+        this.tags = [ 'akpublicationdate' ];
+        this.config = config;
+        this.plugin = plugin;
+        this.njkRenderer = njkRenderer;
+    }
+
+    parse(parser, nodes, lexer) {
+        // console.log(`in publicationDateExtension - parse`);
+        try {
+            var tok = parser.nextToken();
+            var args = parser.parseSignature(null, true);
+            parser.advanceAfterBlockEnd(tok.value);
+            var body = parser.parseUntilBlocks('endakpublicationdate');
+            parser.advanceAfterBlockEnd();
+            return new nodes.CallExtension(this, 'run', args, [body]);
+        } catch (err) {
+            console.error(`publicationDateExtension `, err.stack);
+        }
+    }
+
+    run(context, args, body) {
+        // console.log(`in publicationDateExtension - run`);
+        return this.plugin
+                    .doPublicationDate(context.ctx.publicationDate);
+    };
+}
+
+class TOCGroupElement extends CustomElement {
     get elementName() { return "toc-group"; }
     async process($element, metadata, dirty) {
         const template = $element.attr('template') 
@@ -284,14 +418,14 @@ class TOCGroupElement extends mahabhuta.CustomElement {
                 : "";
 
         dirty();
-        return akasha.partial(this.array.options.config, template, {
+        return this.akasha.partial(this.config, template, {
             id, additionalClasses, suppressContents,
             content
         });
     }
 }
 
-class TOCItemElement extends mahabhuta.CustomElement {
+class TOCItemElement extends CustomElement {
     get elementName() { return "toc-item"; }
     async process($element, metadata, dirty) {
         const template = $element.attr('template') 
@@ -300,6 +434,9 @@ class TOCItemElement extends mahabhuta.CustomElement {
         const id = $element.attr('id');
         const additionalClasses = $element.attr('additional-classes')
                 ? $element.attr('additional-classes')
+                : "";
+        const textClasses = $element.attr('text-classes')
+                ? $element.attr('text-classes')
                 : "";
         const title = $element.attr('title');
         if (!title || title === '') {
@@ -314,14 +451,14 @@ class TOCItemElement extends mahabhuta.CustomElement {
                 : "";
 
         dirty();
-        return akasha.partial(this.array.options.config, template, {
-            id, additionalClasses, title, anchor,
+        return this.akasha.partial(this.config, template, {
+            id, additionalClasses, textClasses, title, anchor,
             content
         });
     }
 }
 
-class OpenGraphPromoteImages extends mahabhuta.Munger {
+class OpenGraphPromoteImages extends Munger {
     get selector() { return "html head open-graph-promote-images"; }
     get elementName() { return 'html head open-graph-promote-images'; }
 
@@ -362,27 +499,76 @@ class OpenGraphPromoteImages extends mahabhuta.Munger {
                     // Ignore these images
             } else {
                 if (href && href.length > 0) {
-                    let pHref = url.parse(href);
+                    // console.log(`OpenGraphPromoteImages ${href}`);
+
+                    // Because we'll often receive a local URL relative
+                    // to the local directory, new URL(href) would throw
+                    // an error.  Adding a bogus baseURL ensures that
+                    // new URL will not crash.  The behavior in such
+                    // a case is like this:
+                    //
+                    // > new URL('img/Human-Skeleton.jpg', 'http://noturl')
+                    // URL {
+                    //   href: 'http://noturl/img/Human-Skeleton.jpg',
+                    //   origin: 'http://noturl',
+                    //   protocol: 'http:',
+                    //   username: '',
+                    //   password: '',
+                    //   host: 'noturl',
+                    //   hostname: 'noturl',
+                    //   port: '',
+                    //   pathname: '/img/Human-Skeleton.jpg',
+                    //   search: '',
+                    //   searchParams: URLSearchParams {},
+                    //   hash: ''
+                    // }
+                    //
+                    // In other words, the `origin` field contains the
+                    // supplied bogus URL.
+                    //
+                    // For this, I decided to make the bogus URL be
+                    // a subdomain of example.com because I know example.com
+                    // will never show up as a legit URL.
+
+                    let uHref = new URL(href, 'http://noturl.example.com');
+                    
                     // In case this is a site-relative URL, fix it up
-                    // to have the full URL.
-                    if (! pHref.host) {
-                        if (pHref.path.match(/^\//)) {
-                            href = this.array.options.config.root_url + href;
+                    // to have the full URL.  As said above, a site-relative
+                    // URL has the bogus URL chosen immediately above.
+                    if (uHref.origin === 'http://noturl.example.com') {
+
+                        // The next detail is that in this case uHref.pathname
+                        // won't accurately reflect the value of href, as can
+                        // be seen above.  The relative url beginning with `img/`
+                        // becomes an absolute pathname beginning with `/ihg/`.
+                        // Therefore to determine if it's a relative URL we
+                        // must check the original string to see if it started
+                        // with a slash.
+                        if (Array.isArray(href.match(/^\//))) {
+                            // console.log(`OpenGraphPromoteImages ${this.config.root_url} ${href} ${util.inspect(uHref)} ${util.inspect(href.match(/^\//))}`);
+
+                            // In case root_url does not end with a '/' we instead
+                            // parse root_url, make href the pathname, then
+                            // format that as a URL.
+                            const pRoot = new URL(this.config.root_url);
+                            pRoot.pathname = href;
+                            href = pRoot.toString();
                         } else {
                             let dirRender = path.dirname(metadata.document.renderTo);
-                            let pRootUrl = url.parse(this.array.options.config.root_url);
+                            let uRootUrl = new URL(this.config.root_url);
+
                             // This is an image relative to
                             // the document.  If the document is
                             // in the root directory, then we must not
                             // prepend the document's directory to
                             // the image href.
-                            pRootUrl.pathname =
+                            uRootUrl.pathname =
                               (dirRender !== "/" && dirRender !== '.')
                                     ? dirRender +'/'+ href
                                     : href;
                             // console.log(pRootUrl);
-                            // console.log(`in ${metadata.document.renderTo} dirRender ${dirRender} href ${href} `, pRootUrl);
-                            href = url.format(pRootUrl);
+                            // console.log(`in ${metadata.document.renderTo} dirRender ${dirRender} href ${href} `, uRootUrl);
+                            href = uRootUrl.toString();
                         }
                     }
                 }
@@ -417,7 +603,7 @@ class OpenGraphPromoteImages extends mahabhuta.Munger {
         //
         // To see this add console.log($.html()) to the top to see the HTML
         // being processed by this Mahafunc.
-        
+
         if (imgcount > 0) $link.remove();
     }
 }

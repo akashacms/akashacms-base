@@ -1,6 +1,6 @@
 {
   "name": "@akashacms/plugins-base",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "author": {
     "name": "David Herron",
     "email": "david@davidherron.com",
@@ -28,12 +28,14 @@
     "url": "git://github.com/akashacms/akashacms-base.git"
   },
   "engines": {
-    "node": ">=12.2"
+    "node": ">=24.x"
   },
+  "main": "index.mjs",
+  "type": "module",
   "scripts": {
-      "dopublish": "npm publish --access public"
+    "dopublish": "npm publish --access public"
   },
   "dependencies": {
-    "sightmap": "*"
+    "sitemap": "^8.x"
   }
 }

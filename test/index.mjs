@@ -1,14 +1,17 @@
 
-const akasha   = require('akasharender');
-const plugin = require('../index');
-const { assert } = require('chai');
+import akasha from 'akasharender';
+import * as plugin from '../index.mjs';
+import { assert } from 'chai';
+
+const __dirname = import.meta.dirname;
 
 const baseConfig = {
     linkRelTags: [
         { relationship: "foo", url: "http://foo.bar" },
         { relationship: "gronk", url: "http://gronk.bar" },
         { relationship: "them", url: "http://them.bar" }
-    ]
+    ],
+    generateSitemapFlag: true
 };
 
 const config = new akasha.Configuration();
@@ -17,7 +20,7 @@ config.configDir = __dirname;
 config.addLayoutsDir('layouts')
       .addPartialsDir('partials')
       .addDocumentsDir('documents');
-config.use(plugin, baseConfig);
+config.use(plugin.BasePlugin, baseConfig);
 config.setMahabhutaConfig({
     recognizeSelfClosing: true,
     recognizeCDATA: true,
@@ -30,7 +33,7 @@ describe('build site', function() {
     it('should successfully setup cache database', async function() {
         this.timeout(75000);
         try {
-            await akasha.cacheSetup(config);
+            await akasha.setup(config);
         } catch (e) {
             console.error(e);
             throw e;
@@ -40,18 +43,18 @@ describe('build site', function() {
     it('should successfully setup file caches', async function() {
         this.timeout(75000);
         try {
-            await Promise.all([
+            /* await Promise.all([
                 akasha.setupDocuments(config),
                 akasha.setupAssets(config),
                 akasha.setupLayouts(config),
                 akasha.setupPartials(config)
-            ])
-            await Promise.all([
+            ]) */
+            /* await Promise.all([
                 (await akasha.filecache).documents.isReady(),
                 (await akasha.filecache).assets.isReady(),
                 (await akasha.filecache).layouts.isReady(),
                 (await akasha.filecache).partials.isReady()
-            ]);
+            ]); */
         } catch (e) {
             console.error(e);
             throw e;
@@ -155,6 +158,8 @@ describe('header meta', function() {
 describe('@akashacms/plugins-base doHeaderMetaSync doGoogleSitemap', function() {
     it('should call those functions w/o failure', async function() {
         let { html, $ } = await akasha.readRenderedFile(config, 'do-plugin-base-direct-calls.html');
+
+        // console.log(html);
 
         assert.exists(html, 'result exists');
         assert.isString(html, 'result isString');
