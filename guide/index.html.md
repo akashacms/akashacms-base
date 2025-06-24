@@ -45,12 +45,17 @@ $ npm install
 
 <h1 id="config">Configuration</h1>
 
-In `config.js` for the website:
+In `config.mjs` for the website:
 
 ```js
-config.use(require('@akashacms/plugins-base'), {
-    generateSitemapFlag: true
-});
+import { BasePlugin } from '@akashacms/plugins-base';
+// ...
+config
+    // ...
+    .use(BasePlugin, {
+        generateSitemapFlag: true
+    })
+    // ...
 ```
 
 The `generateSitemapFlag` flag causes an XML Sitemap to be generated in the file `/sitemap.xml`. See the XML Sitemaps section below.
