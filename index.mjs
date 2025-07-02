@@ -176,7 +176,7 @@ export class BasePlugin extends akasha.Plugin {
             }
 
             const baseURL = new URL(config.root_url);
-            baseURL.pathname = doc.renderpath;
+            baseURL.pathname = doc.renderPath;
 
             rendered_files.push({
                 url: baseURL.toLocaleString(), // doc.renderPath
