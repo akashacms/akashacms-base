@@ -35,6 +35,25 @@ const __dirname = import.meta.dirname;
 
 const pluginName = "@akashacms/plugins-base";
 
+/**
+ * Escape a string for safe inclusion in a double-quoted HTML attribute
+ * value.  Mirrors the encoding parse5/Cheerio applies when serializing
+ * an attribute, so building markup as a string is equivalent to
+ * constructing it via the parser.  Escapes the ampersand first to avoid
+ * double-encoding, then the characters that are significant inside a
+ * double-quoted attribute.
+ *
+ * @param {string} value
+ * @returns {string}
+ */
+function escapeHtmlAttr(value) {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/"/g, '&quot;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+}
+
 
 export class BasePlugin extends akasha.Plugin {
 
@@ -364,6 +383,35 @@ class canonicalURLExtension {
     };
 }
 
+class GitHubDetailsElement extends CustomElement {
+    get elementName() { return "details"; }
+    async process($element, metadata, dirty) {
+        // Look for open attribute
+        // Look in options for openAllDetails
+        // Use Cheerio to find a child <summary> tag - use that for the title text
+        // Otherwise title text is `Details`
+
+        // To render
+        // - An icon for right-arrow and down-arrow -- Perhaps need to add @akashacms/plugin-openicons?
+        // - JavaScript (no Bootstrap) for opening/closing the block
+        // - Remove the <summary> tag after fetching its text
+        // - Throw a block around the text
+        // - Two templates - open - closed - render both and the JavaScript selects which is active
+
+        // Ask Claude -
+        // I need to implement support in plain HTML/JavaScript for a component similar to
+        // the GitHub collapsible section tag.  This means having a <div> that is either
+        // in collapsed or open state.  In collapsed state, there is an arrow pointing to
+        // the right, as well as the title text.  In the open state, the arrow points down,
+        // It has the title text, and shows whatever is within the <div>
+        //
+        // In other words, the <div> toggles between two rendered choices.  One choice
+        // is the closed state that shows the arrow and title text.  The other choice is
+        // the open state tha shows the down-arrow, title text, and body text. 
+
+    }
+}
+
 class PublicationDateElement extends CustomElement {
     get elementName() { return "publication-date"; }
     async process($element, metadata, dirty) {
@@ -473,9 +521,10 @@ class OpenGraphPromoteImages extends Munger {
                 : 'img';
         var imgz = [];
         $(selector).each(function(i, elem) {
-            if ($(elem).hasClass('opengraph-promote')
-            || !($(elem).hasClass('opengraph-no-promote')))
-                imgz.push($(elem).attr('src'));
+            const $elem = $(elem);
+            if ($elem.hasClass('opengraph-promote')
+            || !($elem.hasClass('opengraph-no-promote')))
+                imgz.push($elem.attr('src'));
         });
         // Look for <meta-og-image> tags
         var selector = $link.attr('root')
@@ -486,10 +535,24 @@ class OpenGraphPromoteImages extends Munger {
                 ? ($link.attr('root') +' opengraph-image')
                 : 'opengraph-image';
         $(selector).each(function(i, elem) { 
-            imgz.push($(elem).attr('href')); 
-            $(elem).remove();
+            const $elem = $(elem);
+            imgz.push($elem.attr('href')); 
+            $elem.remove();
         });
         // console.log(`${metadata.rendered_url} image selector ${selector} - gave ${imgz.length} images`);
+
+        // Track the content values of meta tags already present so we can
+        // de-duplicate in O(1) per image rather than running a fresh DOM
+        // attribute query (meta[content="..."]) for every image.  Seed it
+        // from every existing meta[content] in the document -- matching
+        // the original whole-document dedup scope -- then add each href as
+        // it is appended.
+        const seenContent = new Set();
+        $('meta[content]').each(function(i, elem) {
+            const content = $(elem).attr('content');
+            if (typeof content === 'string') seenContent.add(content);
+        });
+
         for (let href of imgz) {
             // let href = $(img).attr('src');
             // console.log(`${metadata.rendered_url} image ${href}`);
@@ -572,18 +635,19 @@ class OpenGraphPromoteImages extends Munger {
                         }
                     }
                 }
-                if ($(`meta[content="${href}"]`).get(0) === undefined) {
+                if (!seenContent.has(href)) {
 
-                    let $new = mahabhuta.parse('<meta name="" content=""/>');
-                    $new('meta').attr('name', 'og:image');
-                    $new('meta').attr('content', href);
-                    let txt = $new.html();
+                    // Build the meta tag as a string rather than parsing a
+                    // fresh document per image.  escapeHtmlAttr ensures the
+                    // href is encoded exactly as parse5/Cheerio would encode
+                    // a double-quoted attribute, so this is equivalent to
+                    // the previous mahabhuta.parse approach.
+                    const txt = `<meta name="og:image" content="${escapeHtmlAttr(href)}"/>`;
 
-                    if (txt) {
-                        // console.log(`${metadata.rendered_url} appending image meta ${txt}`);
-                        imgcount++;
-                        $('head').append(txt);
-                    }
+                    // console.log(`${metadata.rendered_url} appending image meta ${txt}`);
+                    imgcount++;
+                    $('head').append(txt);
+                    seenContent.add(href);
                 }
             }
         }
