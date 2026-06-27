@@ -73,6 +73,7 @@ export class BasePlugin extends akasha.Plugin {
         config.addAssetsDir(path.join(__dirname, 'assets'));
         config.addMahabhuta(mahabhutaArray(options, config, akasha, this));
         if (!options.linkRelTags) this.options.linkRelTags = [];
+        if (!this.options.oembed) this.options.oembed = { enabled: false };
 
         const njk = this.config.findRendererName('.html.njk');
         const env = njk.njkenv();
@@ -160,10 +161,44 @@ export class BasePlugin extends akasha.Plugin {
         return this;
     }
 
-    async onSiteRendered(config) {
-        if (!this.options.generateSitemapFlag) {
-            return Promise.resolve("skipped");
+    /**
+     * Configure generation of oEmbed provider files.  When enabled, the
+     * plugin emits a precomputed oEmbed JSON document (and optionally an
+     * XML document) alongside each rendered HTML page, and injects the
+     * corresponding `<link rel="alternate" type="application/json+oembed">`
+     * discovery tags via the `ak-oembed-links` custom element.
+     *
+     * @param {Configuration} config
+     * @param {boolean|object} opts  `true`/`false` to toggle, or an options
+     *   object.  Recognized fields: `enabled`, `xml`, `providerName`,
+     *   `cacheAge`, `type` (`"link"` or `"rich"`), and `layout`
+     *   (`"sibling"` or `"subtree"`).
+     * @returns {BasePlugin}
+     */
+    generateOEmbed(config, opts) {
+        if (typeof opts === 'boolean') {
+            this.options.oembed = { enabled: opts };
+        } else {
+            this.options.oembed = Object.assign(
+                { enabled: true }, opts ? opts : {});
         }
+        return this;
+    }
+
+    async onSiteRendered(config) {
+        let didWork = false;
+        if (this.options.generateSitemapFlag) {
+            await this.#generateSitemap(config);
+            didWork = true;
+        }
+        if (this.options.oembed && this.options.oembed.enabled) {
+            await this.#generateOEmbed(config);
+            didWork = true;
+        }
+        return didWork ? "okay" : "skipped";
+    }
+
+    async #generateSitemap(config) {
         var rendered_files = [];
         const documents = await this.akasha.filecache.documentsCache.search({
             renderpathmatch: '\.html$'
@@ -210,9 +245,130 @@ export class BasePlugin extends akasha.Plugin {
             destinationDir: config.renderDestination,
             sourceData: rendered_files,
         });
-
-        return "okay";
     }
+
+    async #generateOEmbed(config) {
+        const opts = this.options.oembed;
+        const documents = await this.akasha.filecache.documentsCache.search({
+            renderpathmatch: '\.html$'
+        });
+
+        for (let doc of documents) {
+            const targets = oembedTargets(config, doc.renderPath, opts);
+            const payload = buildOEmbedPayload(config, doc, opts);
+
+            const jsonOut = path.join(
+                config.renderDestination, targets.jsonRenderPath);
+            await fsp.mkdir(path.dirname(jsonOut), { recursive: true });
+            await fsp.writeFile(jsonOut,
+                JSON.stringify(payload, null, 2), 'utf8');
+
+            if (opts.xml) {
+                const xmlOut = path.join(
+                    config.renderDestination, targets.xmlRenderPath);
+                await fsp.mkdir(path.dirname(xmlOut), { recursive: true });
+                await fsp.writeFile(xmlOut,
+                    oembedToXML(payload), 'utf8');
+            }
+        }
+    }
+}
+
+/**
+ * Compute the render paths and absolute URLs for the oEmbed files
+ * associated with an HTML page.  Both the `<head>` `<link>` injection and
+ * the file writer call this so the advertised URL and the written file can
+ * never drift apart.
+ *
+ * @param {Configuration} config
+ * @param {string} htmlRenderPath  The render path of the HTML page.
+ * @param {object} opts            The resolved oembed options.
+ * @returns {{ jsonRenderPath: string, xmlRenderPath: string, jsonURL: string, xmlURL: string }}
+ */
+function oembedTargets(config, htmlRenderPath, opts) {
+    let base;
+    if (opts && opts.layout === 'subtree') {
+        base = 'oembed/' + htmlRenderPath.replace(/\.html$/, '');
+    } else {
+        base = htmlRenderPath.replace(/\.html$/, '.oembed');
+    }
+    const jsonRenderPath = base + '.json';
+    const xmlRenderPath = base + '.xml';
+    const toURL = (p) => {
+        const u = new URL(config.root_url);
+        u.pathname = path.posix.join(u.pathname, p);
+        return u.toString();
+    };
+    return {
+        jsonRenderPath, xmlRenderPath,
+        jsonURL: toURL(jsonRenderPath),
+        xmlURL: toURL(xmlRenderPath)
+    };
+}
+
+/**
+ * Build the oEmbed response object for a document, using metadata already
+ * computed in the document cache.  Computed values (title) come from
+ * `doc.metadata`, while raw frontmatter values (author) come from
+ * `doc.docMetadata`.  Undefined keys are stripped so the JSON stays clean.
+ *
+ * @param {Configuration} config
+ * @param {object} doc   A document-cache row.
+ * @param {object} opts  The resolved oembed options.
+ * @returns {object}
+ */
+function buildOEmbedPayload(config, doc, opts) {
+    const md = doc.metadata ? doc.metadata : {};
+    const dm = doc.docMetadata ? doc.docMetadata : {};
+    const payload = {
+        version: "1.0",
+        type: (opts && opts.type) ? opts.type : "link",
+        title: md.title ? md.title : (md.pagetitle ? md.pagetitle : ""),
+        author_name: dm.author ? dm.author : undefined,
+        author_url: dm.authorURL ? dm.authorURL : undefined,
+        provider_name: (opts && opts.providerName)
+            ? opts.providerName
+            : ((config.metadata && config.metadata.siteName)
+                ? config.metadata.siteName
+                : undefined),
+        provider_url: config.root_url,
+        cache_age: (opts && typeof opts.cacheAge === 'number')
+            ? opts.cacheAge
+            : 86400
+    };
+    for (const key of Object.keys(payload)) {
+        if (typeof payload[key] === 'undefined') delete payload[key];
+    }
+    return payload;
+}
+
+/**
+ * Escape a string for safe inclusion as XML PCDATA.
+ *
+ * @param {*} value
+ * @returns {string}
+ */
+function xmlEscape(value) {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;');
+}
+
+/**
+ * Serialize an oEmbed payload object as an XML oEmbed document, per the
+ * oEmbed spec (root `<oembed>` element with one child per key).
+ *
+ * @param {object} payload
+ * @returns {string}
+ */
+function oembedToXML(payload) {
+    let body = "";
+    for (const [key, value] of Object.entries(payload)) {
+        body += `  <${key}>${xmlEscape(value)}</${key}>\n`;
+    }
+    return `<?xml version="1.0" encoding="utf-8" standalone="yes"?>\n`
+        + `<oembed>\n${body}</oembed>\n`;
 }
 
 export const mahabhutaArray = function(
@@ -229,6 +385,7 @@ export const mahabhutaArray = function(
     ret.addMahafunc(new TOCGroupElement(config, akasha, plugin));
     ret.addMahafunc(new TOCItemElement(config, akasha, plugin));
     ret.addMahafunc(new OpenGraphPromoteImages(config, akasha, plugin));
+    ret.addMahafunc(new OEmbedLinksElement(config, akasha, plugin));
     return ret;
 };
 
@@ -381,6 +538,28 @@ class canonicalURLExtension {
         return this.plugin
                     .doCanonicalURL(context.ctx.rendered_url);
     };
+}
+
+class OEmbedLinksElement extends CustomElement {
+    get elementName() { return "ak-oembed-links"; }
+    async process($element, metadata, dirty) {
+        const plugin = this.config.plugin(pluginName);
+        const opts = plugin.options.oembed;
+        if (!opts || !opts.enabled) return "";
+        const renderTo = (metadata.document && metadata.document.renderTo)
+                ? metadata.document.renderTo
+                : metadata.renderPath;
+        if (!renderTo) return "";
+        const targets = oembedTargets(this.config, renderTo, opts);
+        return this.akasha.partial(this.config,
+            "ak_oembed_links.html.njk", {
+                jsonURL: targets.jsonURL,
+                xmlURL: opts.xml ? targets.xmlURL : null,
+                title: metadata.title
+                        ? metadata.title
+                        : (metadata.pagetitle ? metadata.pagetitle : "")
+            });
+    }
 }
 
 class GitHubDetailsElement extends CustomElement {

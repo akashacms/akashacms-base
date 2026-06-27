@@ -2,16 +2,17 @@
   "name": "akashacms-base-test",
   "version": "1.0.0",
   "description": "Test suite for @akashacms/plugins-base module",
-  "main": "index.js",
+  "private": true,
+  "type": "module",
+  "main": "index.mjs",
   "scripts": {
-    "test": "mocha ./index",
-    "setup": "npm install && cd .. && npm install && npm install --verbose akashacms/akasharender#0.9 --no-save",
-    "clean": "rm -rf node_modules out"
+    "test": "node --test index.mjs",
+    "clean": "rm -rf out"
   },
   "author": "David Herron <david@davidherron.com>",
   "license": "ISC",
-  "dependencies": {
-    "chai": "^4.1.2",
-    "mocha": "^10.4.x"
+  "devDependencies": {
+    "@akashacms/plugins-base": "^0.10.0",
+    "akasharender": "^0.10.0"
   }
 }
