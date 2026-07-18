@@ -12,7 +12,7 @@
   "author": "David Herron <david@davidherron.com>",
   "license": "ISC",
   "devDependencies": {
-    "@akashacms/plugins-base": "^0.10.0",
-    "akasharender": "^0.10.0"
+    "@akashacms/plugins-base": "file:..",
+    "akasharender": "file:../../akasharender"
   }
 }

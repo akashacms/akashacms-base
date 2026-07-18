@@ -36,6 +36,6 @@
     "dopublish": "npm publish --access public"
   },
   "dependencies": {
-    "sitemap": "^8.x"
+    "sitemap": "^9.x"
   }
 }

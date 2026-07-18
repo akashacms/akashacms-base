@@ -25,6 +25,10 @@ const baseConfig = {
 };
 
 const config = new akasha.Configuration();
+// Make sure to configure this correctly
+// in order to trigger https://github.com/akashacms/akashacms-base/issues/6
+config.configDir = __dirname;
+config.setRenderDestination('out');
 config.rootURL("https://example.akashacms.com");
 config.configDir = __dirname;
 config.addLayoutsDir('layouts')

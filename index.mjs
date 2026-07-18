@@ -240,9 +240,29 @@ export class BasePlugin extends akasha.Plugin {
             })
         }
 
+        // Fix: https://github.com/akashacms/akashacms-base/issues/6
+        // The sitemap package now prohibits an absolute pathname or
+        // a pathname with path traversal characters.  It must instead
+        // be a simple relative pathname.
+        //
+        // This computes the render destination relative to
+        // the config file path.  That should turn out to be relative.
+        
+        let destDir = config.renderDestination;
+        if (path.isAbsolute(destDir)) {
+            destDir = path.relative(config.configDir, config.renderDestination); 
+        }
+
+        // console.log({
+        //     foo: "bar",
+        //     destinationDir: destDir,
+        //     configDestDir: config.renderDestination,
+        //     dirname: import.meta.dirname
+        // });
+
         await simpleSitemapAndIndex({
             hostname: config.root_url,
-            destinationDir: config.renderDestination,
+            destinationDir: destDir,
             sourceData: rendered_files,
         });
     }
