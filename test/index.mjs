@@ -363,6 +363,109 @@ describe('oembed provider', () => {
     });
 });
 
+describe('ak-header-sitemap', () => {
+
+    it('should render <ak-header-sitemap> as <link rel="sitemap"> with the generated sitemap href', async () => {
+        let { html, $ } = await akasha.readRenderedFile(config, 'sitemap.html');
+
+        assert.ok(html, 'result exists');
+        assert.equal(typeof html, 'string', 'result isString');
+
+        const link = $('article link[rel="sitemap"]');
+        assert.equal(link.length, 1);
+        assert.equal(link.attr('type'), 'application/xml');
+        assert.equal(link.attr('href'), '/sitemap-index.xml.gz');
+        assert.equal(link.attr('title'), 'ak-header-sitemap element test');
+    });
+
+    it('should render the {% aksitemap %} Nunjucks tag as <link rel="sitemap">', async () => {
+        let { html, $ } = await akasha.readRenderedFile(config, 'sitemap-macros.html');
+
+        assert.ok(html, 'result exists');
+        assert.equal(typeof html, 'string', 'result isString');
+
+        const link = $('article link[rel="sitemap"]');
+        assert.equal(link.length, 1);
+        assert.equal(link.attr('type'), 'application/xml');
+        assert.equal(link.attr('href'), '/sitemap-index.xml.gz');
+        assert.equal(link.attr('title'), 'aksitemap Nunjucks tag test');
+    });
+
+    it('doGoogleSitemap should point at the generated sitemap index', async () => {
+        // The direct-calls page invokes doGoogleSitemap(locals); verify
+        // the emitted href matches the file the plugin actually writes.
+        let { html, $ } = await akasha.readRenderedFile(config, 'do-plugin-base-direct-calls.html');
+        const link = $('article link[rel="sitemap"]');
+        assert.equal(link.length, 1);
+        assert.equal(link.attr('href'), '/sitemap-index.xml.gz');
+    });
+
+    it('doAKSitemap should escape a title containing HTML-significant characters', () => {
+        const basePlugin = config.plugin('@akashacms/plugins-base');
+        const html = basePlugin.doAKSitemap({
+            title: 'Bad <title> "quoted" & unescaped'
+        });
+        // The href is a constant, but the title must be attribute-escaped.
+        assert.ok(html.includes('href="/sitemap-index.xml.gz"'));
+        assert.ok(html.includes(
+            'title="Bad &lt;title&gt; &quot;quoted&quot; &amp; unescaped"'));
+        // And there must be no unescaped < or " left in the title span.
+        assert.ok(!html.includes('title="Bad <title>'));
+    });
+
+    it('doAKSitemap should tolerate metadata without a title', () => {
+        const basePlugin = config.plugin('@akashacms/plugins-base');
+        const html = basePlugin.doAKSitemap({});
+        assert.ok(html.includes('href="/sitemap-index.xml.gz"'));
+        assert.ok(html.includes('title=""'));
+    });
+});
+
+describe('isLegitLocalHref (sitemap paths)', () => {
+
+    it('should recognize sitemap-index.xml and its .gz variant', () => {
+        const basePlugin = config.plugin('@akashacms/plugins-base');
+        assert.equal(basePlugin.isLegitLocalHref(config, '/sitemap-index.xml'), true);
+        assert.equal(basePlugin.isLegitLocalHref(config, '/sitemap-index.xml.gz'), true);
+    });
+
+    it('should recognize numbered sitemap chunks (with and without .gz)', () => {
+        const basePlugin = config.plugin('@akashacms/plugins-base');
+        assert.equal(basePlugin.isLegitLocalHref(config, '/sitemap-0.xml'), true);
+        assert.equal(basePlugin.isLegitLocalHref(config, '/sitemap-0.xml.gz'), true);
+        assert.equal(basePlugin.isLegitLocalHref(config, '/sitemap-1.xml'), true);
+        assert.equal(basePlugin.isLegitLocalHref(config, '/sitemap-42.xml.gz'), true);
+    });
+
+    it('should reject hrefs that do not match the generated sitemap pattern', () => {
+        const basePlugin = config.plugin('@akashacms/plugins-base');
+        // The legacy /sitemap.xml is NOT written by this plugin.
+        assert.equal(basePlugin.isLegitLocalHref(config, '/sitemap.xml'), false);
+        assert.equal(basePlugin.isLegitLocalHref(config, '/sitemap-index.xml.bak'), false);
+        assert.equal(basePlugin.isLegitLocalHref(config, '/sitemap-abc.xml'), false);
+        assert.equal(basePlugin.isLegitLocalHref(config, 'sitemap-0.xml'), false);
+        assert.equal(basePlugin.isLegitLocalHref(config, '/foo.xml'), false);
+        assert.equal(basePlugin.isLegitLocalHref(config, '/'), false);
+        assert.equal(basePlugin.isLegitLocalHref(config, ''), false);
+    });
+
+    it('should tolerate non-string input by returning false', () => {
+        const basePlugin = config.plugin('@akashacms/plugins-base');
+        assert.equal(basePlugin.isLegitLocalHref(config, null), false);
+        assert.equal(basePlugin.isLegitLocalHref(config, undefined), false);
+        assert.equal(basePlugin.isLegitLocalHref(config, 42), false);
+        assert.equal(basePlugin.isLegitLocalHref(config, {}), false);
+    });
+
+    it('askPluginsLegitLocalHref on the Configuration should delegate to the plugin', () => {
+        // Round-trip through the AkashaRender-level API that the link
+        // checker actually calls.
+        assert.equal(config.askPluginsLegitLocalHref('/sitemap-index.xml.gz'), true);
+        assert.equal(config.askPluginsLegitLocalHref('/sitemap-0.xml.gz'), true);
+        assert.equal(config.askPluginsLegitLocalHref('/sitemap.xml'), false);
+    });
+});
+
 describe('close', () => {
     it('should close the configuration', async () => {
         try {

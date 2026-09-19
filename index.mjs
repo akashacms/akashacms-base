@@ -36,6 +36,30 @@ const __dirname = import.meta.dirname;
 const pluginName = "@akashacms/plugins-base";
 
 /**
+ * The site-relative href of the sitemap index written by
+ * {@link BasePlugin#onSiteRendered} via `simpleSitemapAndIndex` from the
+ * `sitemap` package.  With the current hard-coded options
+ * (`gzip: true`, `limit: 50000`) the actual on-disk file is
+ * `sitemap-index.xml.gz`.  This is the href advertised by the
+ * `<ak-header-sitemap>` custom element and the `doGoogleSitemap`
+ * helper.
+ */
+const SITEMAP_INDEX_HREF = "/sitemap-index.xml.gz";
+
+/**
+ * The set of site-relative hrefs that {@link BasePlugin#onSiteRendered}
+ * may write.  Used by {@link BasePlugin#isLegitLocalHref} so the
+ * AkashaRender link checker does not report these paths as broken:
+ * they are generated after render and are therefore absent from both
+ * the documents cache and the assets cache.
+ *
+ * Matches `/sitemap-index.xml`, `/sitemap-N.xml` for any non-negative
+ * integer `N`, and the corresponding `.gz` variants.
+ */
+const SITEMAP_LEGIT_HREF_PATTERN =
+    /^\/sitemap-(index|\d+)\.xml(\.gz)?$/;
+
+/**
  * Escape a string for safe inclusion in a double-quoted HTML attribute
  * value.  Mirrors the encoding parse5/Cheerio applies when serializing
  * an attribute, so building markup as a string is equivalent to
@@ -89,6 +113,9 @@ export class BasePlugin extends akasha.Plugin {
         njk.njkenv().addExtension('akpublicationdate',
             new publicationDateExtension(this.config, this, njk)
         );
+        njk.njkenv().addExtension('aksitemap',
+            new akSitemapExtension(this.config, this, njk)
+        );
     }
 
     get config() { return this.#config; }
@@ -135,11 +162,49 @@ export class BasePlugin extends akasha.Plugin {
         //     from somewhere.
         // http://microformats.org/wiki/rel-sitemap
         var href = undefined; // $element.attr("href");
-        if (!href) href = "/sitemap-index.xml";
+        if (!href) href = SITEMAP_INDEX_HREF;
         let $ = mahabhuta.parse('<link rel="sitemap" type="application/xml" title="" href="" />');
         $('link').attr('title', metadata.title);
         $('link').attr('href', href);
         return $.html();
+    }
+
+    /**
+     * Produce the `<link rel="sitemap">` for the `<ak-header-sitemap>`
+     * custom element and the `{% aksitemap %}` Nunjucks tag.  The href
+     * points at {@link SITEMAP_INDEX_HREF}, which is the file actually
+     * written by {@link BasePlugin#generateSitemap} (see
+     * {@link SITEMAP_LEGIT_HREF_PATTERN}).
+     *
+     * @param {object} metadata  Page metadata; `metadata.title`, if set,
+     *   is used as the link's `title=` attribute.
+     * @returns {string} An HTML `<link>` element as a string.
+     */
+    doAKSitemap(metadata) {
+        const title = (metadata && metadata.title) ? metadata.title : "";
+        return `<link rel="sitemap" type="application/xml"`
+            + ` title="${escapeHtmlAttr(title)}"`
+            + ` href="${escapeHtmlAttr(SITEMAP_INDEX_HREF)}"/>`;
+    }
+
+    /**
+     * Report to the AkashaRender link checker that the sitemap files
+     * this plugin generates in {@link BasePlugin#onSiteRendered} are
+     * valid local hrefs, even though they are not tracked in the
+     * documents or assets caches.  Matches:
+     *
+     * - `/sitemap-index.xml` and `/sitemap-index.xml.gz`
+     * - `/sitemap-N.xml` and `/sitemap-N.xml.gz` for any integer `N`
+     *
+     * This is called by {@link Configuration#askPluginsLegitLocalHref}.
+     *
+     * @param {Configuration} config
+     * @param {string} href
+     * @returns {boolean}
+     */
+    isLegitLocalHref(config, href) {
+        if (typeof href !== 'string') return false;
+        return SITEMAP_LEGIT_HREF_PATTERN.test(href);
     }
 
     doPublicationDate(publicationDate) {
@@ -401,6 +466,7 @@ export const mahabhutaArray = function(
     ret.addMahafunc(new HeaderMetatagsElement(config, akasha, plugin));
     ret.addMahafunc(new LinkRelTagsElement(config, akasha, plugin));
     ret.addMahafunc(new CanonicalURLElement(config, akasha, plugin));
+    ret.addMahafunc(new AKSitemapElement(config, akasha, plugin));
     ret.addMahafunc(new PublicationDateElement(config, akasha, plugin));
     ret.addMahafunc(new TOCGroupElement(config, akasha, plugin));
     ret.addMahafunc(new TOCItemElement(config, akasha, plugin));
@@ -557,6 +623,62 @@ class canonicalURLExtension {
         // console.log(`in canonicalURLExtension - run ${util.inspect(context.ctx)} ${util.inspect(this.plugin)}`);
         return this.plugin
                     .doCanonicalURL(context.ctx.rendered_url);
+    };
+}
+
+/**
+ * `<ak-header-sitemap>` custom element.  Emits a
+ * `<link rel="sitemap" type="application/xml">` pointing at the sitemap
+ * index that {@link BasePlugin#onSiteRendered} actually writes
+ * ({@link SITEMAP_INDEX_HREF}).  The link's `title=` attribute defaults
+ * to the page's `metadata.title`.
+ *
+ * This is the sitemap-link replacement for the Mahabhuta core
+ * `<xml-sitemap>` element, which defaults to a `/sitemap.xml` href that
+ * this plugin does not produce.
+ */
+class AKSitemapElement extends CustomElement {
+    get elementName() { return "ak-header-sitemap"; }
+    process($element, metadata, dirty) {
+        return this.config.plugin(pluginName)
+                    .doAKSitemap(metadata);
+    }
+}
+
+/**
+ * Nunjucks companion of {@link AKSitemapElement}.  Usage in a `.njk`
+ * template:
+ *
+ * ```njk
+ * {% aksitemap %}{% endaksitemap %}
+ * ```
+ *
+ * Emits the same `<link rel="sitemap">` markup as
+ * `<ak-header-sitemap>`.
+ */
+class akSitemapExtension {
+    constructor(config, plugin, njkRenderer) {
+        this.tags = [ 'aksitemap' ];
+        this.config = config;
+        this.plugin = plugin;
+        this.njkRenderer = njkRenderer;
+    }
+
+    parse(parser, nodes, lexer) {
+        try {
+            var tok = parser.nextToken();
+            var args = parser.parseSignature(null, true);
+            parser.advanceAfterBlockEnd(tok.value);
+            var body = parser.parseUntilBlocks('endaksitemap');
+            parser.advanceAfterBlockEnd();
+            return new nodes.CallExtension(this, 'run', args, [body]);
+        } catch (err) {
+            console.error(`akSitemapExtension `, err.stack);
+        }
+    }
+
+    run(context, args, body) {
+        return this.plugin.doAKSitemap(context.ctx);
     };
 }
 
